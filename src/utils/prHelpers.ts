@@ -64,6 +64,7 @@ export function enhancePR(
     missingAssignee,
     missingReviewer,
     reviewerCount,
+    commentCount: 0,
     isUrgent: urgent,
     isQuick: quick,
     repo: {

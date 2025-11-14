@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { RefreshCw, ChevronDown } from 'lucide-react';
 import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
@@ -16,23 +16,151 @@ interface DashboardProps {
 
 export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick }: DashboardProps) {
   const [sortBy, setSortBy] = useState<SortOption>('urgent-overdue');
-  const [filter, setFilter] = useState<FilterOption>('all');
+  const [selectedFilters, setSelectedFilters] = useState<Set<FilterOption>>(new Set());
+  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [isRepoDropdownOpen, setIsRepoDropdownOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const repoDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setIsFilterDropdownOpen(false);
+      }
+      if (repoDropdownRef.current && !repoDropdownRef.current.contains(event.target as Node)) {
+        setIsRepoDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Get unique repositories
+  const repositories = useMemo(() => {
+    const repoSet = new Set<string>();
+    prs.forEach((pr) => {
+      repoSet.add(`${pr.repo.owner}/${pr.repo.name}`);
+    });
+    return Array.from(repoSet).sort();
+  }, [prs]);
+
+  // Get unique repos for fetching collaborators
+  const uniqueRepos = useMemo(() => {
+    const repos = new Map<string, { owner: string; repo: string }>();
+    prs.forEach((pr) => {
+      const key = `${pr.repo.owner}/${pr.repo.name}`;
+      if (!repos.has(key)) {
+        repos.set(key, { owner: pr.repo.owner, repo: pr.repo.name });
+      }
+    });
+    return Array.from(repos.values());
+  }, [prs]);
+
+  // Fetch collaborators from all repos using useState and useEffect
+  const [allCollaborators, setAllCollaborators] = useState<Array<{ id: number; login: string; avatar_url: string }>>([]);
+
+  useEffect(() => {
+    const fetchCollaborators = async () => {
+      try {
+        const promises = uniqueRepos.map(async (repo) => {
+          const response = await fetch(`/api/collaborators?owner=${repo.owner}&repo=${repo.repo}`);
+          if (!response.ok) return [];
+          return response.json();
+        });
+
+        const results = await Promise.all(promises);
+
+        // Deduplicate by ID
+        const collaboratorMap = new Map();
+        results.flat().forEach((collaborator: any) => {
+          collaboratorMap.set(collaborator.id, collaborator);
+        });
+
+        setAllCollaborators(Array.from(collaboratorMap.values()));
+      } catch (error) {
+        console.error('Error fetching collaborators:', error);
+        setAllCollaborators([]);
+      }
+    };
+
+    if (uniqueRepos.length > 0) {
+      fetchCollaborators();
+    }
+  }, [uniqueRepos]);
+
+  // Toggle filter selection
+  const toggleFilter = (filter: FilterOption) => {
+    setSelectedFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(filter)) {
+        next.delete(filter);
+      } else {
+        next.add(filter);
+      }
+      return next;
+    });
+  };
+
+  // Select all filters
+  const selectAllFilters = () => {
+    setSelectedFilters(new Set<FilterOption>(['urgent', 'overdue', 'quick', 'unassigned']));
+  };
+
+  // Clear filter selection
+  const clearFilterSelection = () => {
+    setSelectedFilters(new Set());
+  };
+
+  // Toggle repository selection
+  const toggleRepo = (repo: string) => {
+    setSelectedRepos((prev) => {
+      const next = new Set(prev);
+      if (next.has(repo)) {
+        next.delete(repo);
+      } else {
+        next.add(repo);
+      }
+      return next;
+    });
+  };
+
+  // Select all repositories
+  const selectAllRepos = () => {
+    setSelectedRepos(new Set(repositories));
+  };
+
+  // Clear repository selection
+  const clearRepoSelection = () => {
+    setSelectedRepos(new Set());
+  };
 
   // Filter PRs
   const filteredPRs = useMemo(() => {
-    switch (filter) {
-      case 'urgent':
-        return prs.filter((pr) => pr.isUrgent);
-      case 'overdue':
-        return prs.filter((pr) => pr.status === 'overdue');
-      case 'unassigned':
-        return prs.filter((pr) => pr.missingAssignee || pr.missingReviewer);
-      case 'quick':
-        return prs.filter((pr) => pr.isQuick);
-      default:
-        return prs;
+    let filtered = prs;
+
+    // Apply status filters (if any filters are selected)
+    if (selectedFilters.size > 0) {
+      filtered = filtered.filter((pr) => {
+        if (selectedFilters.has('urgent') && pr.isUrgent) return true;
+        if (selectedFilters.has('overdue') && pr.status === 'overdue') return true;
+        if (selectedFilters.has('quick') && pr.isQuick) return true;
+        if (selectedFilters.has('unassigned') && (pr.missingAssignee || pr.missingReviewer)) return true;
+        return false;
+      });
     }
-  }, [prs, filter]);
+
+    // Apply repository filter (if any repos are selected)
+    if (selectedRepos.size > 0) {
+      filtered = filtered.filter((pr) =>
+        selectedRepos.has(`${pr.repo.owner}/${pr.repo.name}`)
+      );
+    }
+
+    return filtered;
+  }, [prs, selectedFilters, selectedRepos]);
 
   // Sort PRs
   const sortedPRs = useMemo(() => {
@@ -88,61 +216,138 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
 
       {/* Controls */}
       <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
           {/* Filters */}
-          <div className="flex flex-wrap gap-2">
-            <span className="text-sm font-medium text-gray-700 self-center">Filtros:</span>
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
-                filter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Todas ({prs.length})
-            </button>
-            <button
-              onClick={() => setFilter('urgent')}
-              className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
-                filter === 'urgent'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              ⭐ Urgentes ({stats.urgent})
-            </button>
-            <button
-              onClick={() => setFilter('overdue')}
-              className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
-                filter === 'overdue'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              🚨 Overdue ({stats.overdue})
-            </button>
-            <button
-              onClick={() => setFilter('quick')}
-              className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
-                filter === 'quick'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              ⚡ Rápidas ({stats.quick})
-            </button>
-            <button
-              onClick={() => setFilter('unassigned')}
-              className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
-                filter === 'unassigned'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Sin asignar ({stats.unassigned})
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Filtros:</span>
+            <div className="relative" ref={filterDropdownRef}>
+              <button
+                onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1 text-sm rounded font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                <span>
+                  {selectedFilters.size === 0
+                    ? 'Todos'
+                    : `${selectedFilters.size} filtro${selectedFilters.size > 1 ? 's' : ''}`}
+                </span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+
+              {isFilterDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[250px]">
+                  <div className="p-2 border-b border-gray-200 bg-gray-50">
+                    <button
+                      onClick={selectedFilters.size === 0 ? selectAllFilters : clearFilterSelection}
+                      className="w-full px-3 py-1.5 text-sm rounded font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    >
+                      {selectedFilters.size === 0 ? 'Seleccionar todos' : 'Limpiar selección'}
+                    </button>
+                  </div>
+                  <div className="p-2">
+                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedFilters.has('urgent')}
+                        onChange={() => toggleFilter('urgent')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm flex-1">
+                        ⭐ Urgentes <span className="text-gray-500">({stats.urgent})</span>
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedFilters.has('overdue')}
+                        onChange={() => toggleFilter('overdue')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm flex-1">
+                        🚨 Overdue <span className="text-gray-500">({stats.overdue})</span>
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedFilters.has('quick')}
+                        onChange={() => toggleFilter('quick')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm flex-1">
+                        ⚡ Rápidas <span className="text-gray-500">({stats.quick})</span>
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedFilters.has('unassigned')}
+                        onChange={() => toggleFilter('unassigned')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm flex-1">
+                        Sin asignar <span className="text-gray-500">({stats.unassigned})</span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Repository filters */}
+          {repositories.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Repositorios:</span>
+              <div className="relative" ref={repoDropdownRef}>
+                <button
+                  onClick={() => setIsRepoDropdownOpen(!isRepoDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-1 text-sm rounded font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                >
+                  <span>
+                    {selectedRepos.size === 0
+                      ? 'Todos'
+                      : `${selectedRepos.size} repo${selectedRepos.size > 1 ? 's' : ''}`}
+                  </span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+
+                {isRepoDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[300px] max-h-[400px] overflow-y-auto">
+                    <div className="p-2 border-b border-gray-200 bg-gray-50">
+                      <button
+                        onClick={selectedRepos.size === 0 ? selectAllRepos : clearRepoSelection}
+                        className="w-full px-3 py-1.5 text-sm rounded font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                      >
+                        {selectedRepos.size === 0 ? 'Seleccionar todos' : 'Limpiar selección'}
+                      </button>
+                    </div>
+                    <div className="p-2">
+                      {repositories.map((repo) => {
+                        const isSelected = selectedRepos.has(repo);
+                        const repoCount = prs.filter(pr => `${pr.repo.owner}/${pr.repo.name}` === repo).length;
+                        return (
+                          <label
+                            key={repo}
+                            className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleRepo(repo)}
+                              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            />
+                            <span className="text-sm flex-1">
+                              {repo} <span className="text-gray-500">({repoCount})</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Sort */}
           <div className="flex items-center gap-2">
@@ -162,7 +367,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1 text-sm rounded font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-1 text-sm rounded font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             <span>{isLoading ? 'Cargando...' : 'Refrescar'}</span>
@@ -179,9 +384,9 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
         ) : sortedPRs.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <div className="text-gray-600">
-              {filter === 'all'
+              {selectedFilters.size === 0 && selectedRepos.size === 0
                 ? 'No hay PRs abiertas'
-                : `No hay PRs que coincidan con el filtro "${filter}"`}
+                : 'No hay PRs que coincidan con los filtros seleccionados'}
             </div>
           </div>
         ) : (
@@ -197,6 +402,8 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                 onToggleQuick={onToggleQuick}
                 isProcessingUrgent={isProcessingUrgent(pr)}
                 isProcessingQuick={isProcessingQuick(pr)}
+                collaborators={allCollaborators}
+                onPRUpdated={onRefresh}
               />
             ))}
           </div>

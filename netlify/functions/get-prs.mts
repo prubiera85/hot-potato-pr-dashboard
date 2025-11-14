@@ -49,6 +49,7 @@ export default async (req: Request, context: Context) => {
             const enhancedPRs = pulls.map((pr) => {
               const hoursOpen = (Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60);
               const reviewerCount = pr.requested_reviewers?.length || 0;
+              const commentCount = pr.comments || 0;
               const missingAssignee = !pr.assignees || pr.assignees.length === 0;
               const missingReviewer = reviewerCount === 0;
               const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
@@ -56,7 +57,7 @@ export default async (req: Request, context: Context) => {
 
               // Calculate status
               let status: "ok" | "warning" | "overdue" = "ok";
-              if (missingAssignee || missingReviewer) {
+              if (!missingAssignee) {
                 if (hoursOpen >= config.assignmentTimeLimit) {
                   status = "overdue";
                 } else if ((hoursOpen / config.assignmentTimeLimit) * 100 >= config.warningThreshold) {
@@ -71,6 +72,7 @@ export default async (req: Request, context: Context) => {
                 missingAssignee,
                 missingReviewer,
                 reviewerCount,
+                commentCount,
                 isUrgent,
                 isQuick,
                 repo: {

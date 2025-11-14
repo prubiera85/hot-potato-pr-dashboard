@@ -25,7 +25,11 @@
       "Bash(npm run dev:*)",
       "Bash(netlify status:*)",
       "Bash(netlify deploys:list:*)",
-      "Bash(netlify api listSiteDeploys:*)"
+      "Bash(netlify api listSiteDeploys:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "WebFetch(domain:www.shadcn.io)"
     ],
     "deny": [],
     "ask": []

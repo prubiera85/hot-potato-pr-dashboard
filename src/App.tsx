@@ -25,6 +25,7 @@ function AppContent() {
   const {
     data: prsData,
     isLoading,
+    isFetching,
     refetch,
   } = useQuery({
     queryKey: ['prs', isTestMode],
@@ -272,7 +273,7 @@ function AppContent() {
         ) : (
           <Dashboard
             prs={prs}
-            isLoading={isLoading && !isTestMode}
+            isLoading={isFetching && !isTestMode}
             onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
             onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
             onRefresh={() => refetch()}
