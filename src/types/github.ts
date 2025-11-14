@@ -65,4 +65,4 @@ export interface DashboardConfig {
 }
 
 export type SortOption = 'urgent-overdue' | 'time-open' | 'reviewers';
-export type FilterOption = 'all' | 'urgent' | 'overdue' | 'unassigned';
+export type FilterOption = 'all' | 'urgent' | 'overdue' | 'unassigned' | 'quick';

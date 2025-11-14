@@ -19,6 +19,7 @@ function AppContent() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
+  const [processingPRs, setProcessingPRs] = useState<Set<string>>(new Set());
 
   // Fetch PRs and config
   const {
@@ -77,11 +78,18 @@ function AppContent() {
     },
   });
 
+  // Helper to get PR key
+  const getPRKey = (pr: EnhancedPR) => `${pr.repo.owner}/${pr.repo.name}#${pr.number}`;
+
   // Toggle urgent mutation
   const toggleUrgentMutation = useMutation({
     mutationFn: async (pr: EnhancedPR) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => new Set(prev).add(`${prKey}-urgent`));
+
       if (isTestMode) {
         // In test mode, just pretend it worked
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
         return { success: true };
       }
       const response = await fetch('/api/toggle-urgent', {
@@ -102,16 +110,35 @@ function AppContent() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+    onSuccess: async (_, pr) => {
+      // Wait for the query to refetch before clearing processing state
+      await queryClient.invalidateQueries({ queryKey: ['prs'] });
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-urgent`);
+        return next;
+      });
+    },
+    onError: (_, pr) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-urgent`);
+        return next;
+      });
     },
   });
 
   // Toggle quick mutation
   const toggleQuickMutation = useMutation({
     mutationFn: async (pr: EnhancedPR) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => new Set(prev).add(`${prKey}-quick`));
+
       if (isTestMode) {
         // In test mode, just pretend it worked
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
         return { success: true };
       }
       const response = await fetch('/api/toggle-quick', {
@@ -132,8 +159,23 @@ function AppContent() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+    onSuccess: async (_, pr) => {
+      // Wait for the query to refetch before clearing processing state
+      await queryClient.invalidateQueries({ queryKey: ['prs'] });
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-quick`);
+        return next;
+      });
+    },
+    onError: (_, pr) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-quick`);
+        return next;
+      });
     },
   });
 
@@ -234,6 +276,8 @@ function AppContent() {
             onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
             onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
             onRefresh={() => refetch()}
+            isProcessingUrgent={(pr) => processingPRs.has(`${getPRKey(pr)}-urgent`)}
+            isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
           />
         )}
       </main>

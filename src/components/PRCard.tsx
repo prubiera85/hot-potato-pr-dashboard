@@ -1,4 +1,4 @@
-import { StarIcon, ArrowTopRightOnSquareIcon, BoltIcon } from '@heroicons/react/24/outline';
+import { StarIcon, ArrowTopRightOnSquareIcon, BoltIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon, BoltIcon as BoltSolidIcon } from '@heroicons/react/24/solid';
 import type { EnhancedPR } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
@@ -7,9 +7,11 @@ interface PRCardProps {
   pr: EnhancedPR;
   onToggleUrgent: (pr: EnhancedPR) => void;
   onToggleQuick: (pr: EnhancedPR) => void;
+  isProcessingUrgent: boolean;
+  isProcessingQuick: boolean;
 }
 
-export function PRCard({ pr, onToggleUrgent, onToggleQuick }: PRCardProps) {
+export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick }: PRCardProps) {
   const statusConfig = {
     ok: {
       icon: '✅',
@@ -140,14 +142,20 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick }: PRCardProps) {
         <div className="flex flex-col gap-2 ml-4 w-40">
           <button
             onClick={() => onToggleUrgent(pr)}
+            disabled={isProcessingUrgent}
             className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm rounded font-medium transition-colors w-full ${
               pr.isUrgent
                 ? 'bg-red-600 text-white hover:bg-red-700'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
             title={pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}
           >
-            {pr.isUrgent ? (
+            {isProcessingUrgent ? (
+              <>
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : pr.isUrgent ? (
               <>
                 <StarSolidIcon className="w-4 h-4" />
                 <span>Urgente</span>
@@ -162,14 +170,20 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick }: PRCardProps) {
 
           <button
             onClick={() => onToggleQuick(pr)}
+            disabled={isProcessingQuick}
             className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm rounded font-medium transition-colors w-full ${
               pr.isQuick
                 ? 'bg-yellow-500 text-white hover:bg-yellow-600'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
             title={pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}
           >
-            {pr.isQuick ? (
+            {isProcessingQuick ? (
+              <>
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : pr.isQuick ? (
               <>
                 <BoltSolidIcon className="w-4 h-4" />
                 <span>Rápida</span>

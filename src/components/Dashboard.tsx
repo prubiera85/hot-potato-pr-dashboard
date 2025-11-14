@@ -10,9 +10,11 @@ interface DashboardProps {
   onToggleUrgent: (pr: EnhancedPR) => void;
   onToggleQuick: (pr: EnhancedPR) => void;
   onRefresh: () => void;
+  isProcessingUrgent: (pr: EnhancedPR) => boolean;
+  isProcessingQuick: (pr: EnhancedPR) => boolean;
 }
 
-export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh }: DashboardProps) {
+export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick }: DashboardProps) {
   const [sortBy, setSortBy] = useState<SortOption>('urgent-overdue');
   const [filter, setFilter] = useState<FilterOption>('all');
 
@@ -25,6 +27,8 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
         return prs.filter((pr) => pr.status === 'overdue');
       case 'unassigned':
         return prs.filter((pr) => pr.missingAssignee || pr.missingReviewer);
+      case 'quick':
+        return prs.filter((pr) => pr.isQuick);
       default:
         return prs;
     }
@@ -42,6 +46,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
       urgent: prs.filter((pr) => pr.isUrgent).length,
       overdue: prs.filter((pr) => pr.status === 'overdue').length,
       unassigned: prs.filter((pr) => pr.missingAssignee || pr.missingReviewer).length,
+      quick: prs.filter((pr) => pr.isQuick).length,
       missingAssignee: prs.filter((pr) => pr.missingAssignee).length,
       missingReviewer: prs.filter((pr) => pr.missingReviewer).length,
     };
@@ -50,7 +55,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
         <div className="bg-white rounded-lg shadow p-4 border-2 border-gray-300">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-600">Total PRs</div>
@@ -58,6 +63,10 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
         <div className="bg-white rounded-lg shadow p-4 border-2 border-red-300">
           <div className="text-2xl font-bold text-red-700">{stats.urgent}</div>
           <div className="text-sm text-red-600">Urgentes</div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-4 border-2 border-yellow-300">
+          <div className="text-2xl font-bold text-yellow-600">{stats.quick}</div>
+          <div className="text-sm text-yellow-500">Rápidas</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 border-2 border-red-300">
           <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
@@ -112,6 +121,16 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
               }`}
             >
               🚨 Overdue ({stats.overdue})
+            </button>
+            <button
+              onClick={() => setFilter('quick')}
+              className={`px-3 py-1 text-sm rounded font-medium transition-colors ${
+                filter === 'quick'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              ⚡ Rápidas ({stats.quick})
             </button>
             <button
               onClick={() => setFilter('unassigned')}
@@ -171,7 +190,14 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
               Mostrando {sortedPRs.length} de {prs.length} PRs
             </div>
             {sortedPRs.map((pr) => (
-              <PRCard key={`${pr.repo.owner}-${pr.repo.name}-${pr.number}`} pr={pr} onToggleUrgent={onToggleUrgent} onToggleQuick={onToggleQuick} />
+              <PRCard
+                key={`${pr.repo.owner}-${pr.repo.name}-${pr.number}`}
+                pr={pr}
+                onToggleUrgent={onToggleUrgent}
+                onToggleQuick={onToggleQuick}
+                isProcessingUrgent={isProcessingUrgent(pr)}
+                isProcessingQuick={isProcessingQuick(pr)}
+              />
             ))}
           </div>
         )}
