@@ -14,8 +14,7 @@ interface ConfigPanelProps {
 export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: ConfigPanelProps) {
   const [timeLimit, setTimeLimit] = useState(config.assignmentTimeLimit);
   const [repositories, setRepositories] = useState<Repository[]>(config.repositories);
-  const [newRepoOwner, setNewRepoOwner] = useState('');
-  const [newRepoName, setNewRepoName] = useState('');
+  const [newRepoInput, setNewRepoInput] = useState('');
 
   useEffect(() => {
     setTimeLimit(config.assignmentTimeLimit);
@@ -31,18 +30,50 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
     onClose();
   };
 
+  // Extract owner/repo from URL or direct format
+  const parseRepoInput = (input: string): { owner: string; name: string } | null => {
+    const trimmed = input.trim();
+
+    // Try to match GitHub URL patterns
+    const urlPatterns = [
+      /github\.com\/([^\/]+)\/([^\/]+)/i,  // https://github.com/owner/repo or github.com/owner/repo
+    ];
+
+    for (const pattern of urlPatterns) {
+      const match = trimmed.match(pattern);
+      if (match) {
+        return {
+          owner: match[1],
+          name: match[2].replace(/\.git$/, ''), // Remove .git if present
+        };
+      }
+    }
+
+    // Try direct owner/repo format
+    const directMatch = trimmed.match(/^([^\/]+)\/([^\/]+)$/);
+    if (directMatch) {
+      return {
+        owner: directMatch[1],
+        name: directMatch[2],
+      };
+    }
+
+    return null;
+  };
+
   const handleAddRepo = () => {
-    if (newRepoOwner && newRepoName) {
+    const parsed = parseRepoInput(newRepoInput);
+
+    if (parsed) {
       const exists = repositories.some(
-        (r) => r.owner === newRepoOwner && r.name === newRepoName
+        (r) => r.owner === parsed.owner && r.name === parsed.name
       );
       if (!exists) {
         setRepositories([
           ...repositories,
-          { owner: newRepoOwner, name: newRepoName, enabled: true },
+          { owner: parsed.owner, name: parsed.name, enabled: true },
         ]);
-        setNewRepoOwner('');
-        setNewRepoName('');
+        setNewRepoInput('');
       }
     }
   };
@@ -94,27 +125,24 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Owner (ej: facebook)"
-                  value={newRepoOwner}
-                  onChange={(e) => setNewRepoOwner(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Repo (ej: react)"
-                  value={newRepoName}
-                  onChange={(e) => setNewRepoName(e.target.value)}
+                  placeholder="URL o owner/repo (ej: https://github.com/facebook/react o facebook/react)"
+                  value={newRepoInput}
+                  onChange={(e) => setNewRepoInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddRepo()}
                   className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={handleAddRepo}
-                  disabled={!newRepoOwner || !newRepoName}
+                  disabled={!newRepoInput.trim()}
                   className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusIcon className="w-4 h-4" />
                   <span>Agregar</span>
                 </button>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                💡 Puedes pegar una URL de GitHub o escribir directamente owner/repo
+              </p>
             </div>
 
             {/* Repository List */}
