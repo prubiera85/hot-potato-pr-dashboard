@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, TrashIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import type { DashboardConfig, Repository } from '../types/github';
 import { Modal } from './Modal';
 
@@ -15,6 +15,8 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
   const [timeLimit, setTimeLimit] = useState(config.assignmentTimeLimit);
   const [repositories, setRepositories] = useState<Repository[]>(config.repositories);
   const [newRepoInput, setNewRepoInput] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
 
   useEffect(() => {
     setTimeLimit(config.assignmentTimeLimit);
@@ -61,20 +63,63 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
     return null;
   };
 
-  const handleAddRepo = () => {
+  const handleAddRepo = async () => {
+    setValidationError(null);
+
     const parsed = parseRepoInput(newRepoInput);
 
-    if (parsed) {
-      const exists = repositories.some(
-        (r) => r.owner === parsed.owner && r.name === parsed.name
+    if (!parsed) {
+      setValidationError(
+        '❌ Formato inválido.\n\n' +
+        '✅ Formatos aceptados:\n' +
+        '  • URL completa: https://github.com/owner/repo\n' +
+        '  • Formato corto: owner/repo\n\n' +
+        'Ejemplos válidos:\n' +
+        '  • https://github.com/facebook/react\n' +
+        '  • facebook/react'
       );
-      if (!exists) {
+      return;
+    }
+
+    // Check if already exists
+    const exists = repositories.some(
+      (r) => r.owner === parsed.owner && r.name === parsed.name
+    );
+    if (exists) {
+      setValidationError(`⚠️ El repositorio ${parsed.owner}/${parsed.name} ya está en la lista`);
+      return;
+    }
+
+    // Validate with backend
+    setIsValidating(true);
+    try {
+      const response = await fetch('/api/validate-repo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          owner: parsed.owner,
+          repo: parsed.name,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.valid) {
         setRepositories([
           ...repositories,
           { owner: parsed.owner, name: parsed.name, enabled: true },
         ]);
         setNewRepoInput('');
+        setValidationError(null);
+      } else {
+        setValidationError(result.error || 'Error al validar el repositorio');
       }
+    } catch (error) {
+      setValidationError('⚠️ Error al validar el repositorio. Intenta de nuevo.');
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -127,22 +172,46 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                   type="text"
                   placeholder="URL o owner/repo (ej: https://github.com/facebook/react o facebook/react)"
                   value={newRepoInput}
-                  onChange={(e) => setNewRepoInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddRepo()}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => {
+                    setNewRepoInput(e.target.value);
+                    setValidationError(null); // Clear error when typing
+                  }}
+                  onKeyPress={(e) => e.key === 'Enter' && !isValidating && handleAddRepo()}
+                  className={`flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 ${
+                    validationError
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
                 />
                 <button
                   onClick={handleAddRepo}
-                  disabled={!newRepoInput.trim()}
+                  disabled={!newRepoInput.trim() || isValidating}
                   className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusIcon className="w-4 h-4" />
-                  <span>Agregar</span>
+                  <span>{isValidating ? 'Validando...' : 'Agregar'}</span>
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                💡 Puedes pegar una URL de GitHub o escribir directamente owner/repo
-              </p>
+
+              {/* Validation Error Message */}
+              {validationError && (
+                <div className="mt-3 p-3 bg-red-50 border-l-4 border-red-500 rounded">
+                  <div className="flex items-start gap-2">
+                    <XCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <pre className="text-sm text-red-800 whitespace-pre-wrap font-sans">
+                        {validationError}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!validationError && (
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Puedes pegar una URL de GitHub o escribir directamente owner/repo
+                </p>
+              )}
             </div>
 
             {/* Repository List */}
