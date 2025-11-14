@@ -66,27 +66,49 @@ export function PRCard({ pr, onToggleUrgent }: PRCardProps) {
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className={pr.missingAssignee ? 'text-red-600 font-semibold' : 'text-green-600'}>
                 {pr.missingAssignee ? '❌' : '✅'} Assignee:
               </span>
               {pr.assignees.length > 0 ? (
-                <span className="text-gray-700">
-                  {pr.assignees.map((a) => '@' + a.login).join(', ')}
-                </span>
+                <div className="flex items-center gap-1">
+                  {pr.assignees.map((a) => (
+                    <img
+                      key={a.id}
+                      src={a.avatar_url}
+                      alt={a.login}
+                      title={`@${a.login}`}
+                      className="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                    />
+                  ))}
+                  <span className="text-gray-700 ml-1">
+                    {pr.assignees.map((a) => '@' + a.login).join(', ')}
+                  </span>
+                </div>
               ) : (
                 <span className="text-red-600 font-semibold">Sin asignar</span>
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <span className={pr.missingReviewer ? 'text-red-600 font-semibold' : 'text-green-600'}>
                 {pr.missingReviewer ? '❌' : '✅'} Reviewer:
               </span>
               {pr.requested_reviewers.length > 0 ? (
-                <span className="text-gray-700">
-                  {pr.requested_reviewers.map((r) => '@' + r.login).join(', ')} ({pr.reviewerCount})
-                </span>
+                <div className="flex items-center gap-1">
+                  {pr.requested_reviewers.map((r) => (
+                    <img
+                      key={r.id}
+                      src={r.avatar_url}
+                      alt={r.login}
+                      title={`@${r.login}`}
+                      className="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-blue-500 transition-colors cursor-pointer"
+                    />
+                  ))}
+                  <span className="text-gray-700 ml-1">
+                    {pr.requested_reviewers.map((r) => '@' + r.login).join(', ')} ({pr.reviewerCount})
+                  </span>
+                </div>
               ) : (
                 <span className="text-red-600 font-semibold">Sin reviewer</span>
               )}
