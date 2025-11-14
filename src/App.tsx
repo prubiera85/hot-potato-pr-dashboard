@@ -120,7 +120,11 @@ function AppContent() {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto py-6 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-4xl">🥔🔥</span>
+            <img
+              src="/hot-potato-logo.png"
+              alt="Hot Potato Logo"
+              className="h-16 w-16 object-contain"
+            />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Hot Potato PR Dashboard</h1>
               <p className="text-sm text-gray-600 mt-1">
