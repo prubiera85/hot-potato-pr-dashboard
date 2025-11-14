@@ -11,15 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/prubiera85/pr-dashboard.git"
+    "url": "git+https://github.com/prubiera85/hot-potato-pr-dashboard.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/prubiera85/pr-dashboard/issues"
+    "url": "https://github.com/prubiera85/hot-potato-pr-dashboard/issues"
   },
-  "homepage": "https://github.com/prubiera85/pr-dashboard#readme",
+  "homepage": "https://github.com/prubiera85/hot-potato-pr-dashboard#readme",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@netlify/functions": "^5.1.0",

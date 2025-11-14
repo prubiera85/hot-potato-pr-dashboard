@@ -25,8 +25,8 @@ Monitor de Pull Requests de GitHub con alertas de asignación y gestión de urge
 
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/prubiera85/pr-dashboard.git
-cd pr-dashboard
+git clone https://github.com/prubiera85/hot-potato-pr-dashboard.git
+cd hot-potato-pr-dashboard
 ```
 
 2. Instala dependencias:
