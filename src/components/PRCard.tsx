@@ -1,5 +1,4 @@
-import { StarIcon, ArrowTopRightOnSquareIcon, BoltIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon, BoltIcon as BoltSolidIcon } from '@heroicons/react/24/solid';
+import { Star, ExternalLink, Zap, Loader2 } from 'lucide-react';
 import type { EnhancedPR } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
 
@@ -152,17 +151,17 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
           >
             {isProcessingUrgent ? (
               <>
-                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Guardando...</span>
               </>
             ) : pr.isUrgent ? (
               <>
-                <StarSolidIcon className="w-4 h-4" />
+                <Star className="w-4 h-4" fill="currentColor" />
                 <span>Urgente</span>
               </>
             ) : (
               <>
-                <StarIcon className="w-4 h-4" />
+                <Star className="w-4 h-4" />
                 <span>Marcar urgente</span>
               </>
             )}
@@ -180,17 +179,17 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
           >
             {isProcessingQuick ? (
               <>
-                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Guardando...</span>
               </>
             ) : pr.isQuick ? (
               <>
-                <BoltSolidIcon className="w-4 h-4" />
+                <Zap className="w-4 h-4" fill="currentColor" />
                 <span>Rápida</span>
               </>
             ) : (
               <>
-                <BoltIcon className="w-4 h-4" />
+                <Zap className="w-4 h-4" />
                 <span>Marcar rápida</span>
               </>
             )}
@@ -202,7 +201,7 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm rounded font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors text-center w-full"
           >
-            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+            <ExternalLink className="w-4 h-4" />
             <span>Ver en GitHub</span>
           </a>
         </div>

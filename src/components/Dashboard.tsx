@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { RefreshCw } from 'lucide-react';
 import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
@@ -164,7 +164,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
             disabled={isLoading}
             className="flex items-center gap-1.5 px-3 py-1 text-sm rounded font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <ArrowPathIcon className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             <span>{isLoading ? 'Cargando...' : 'Refrescar'}</span>
           </button>
         </div>

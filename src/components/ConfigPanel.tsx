@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import type { DashboardConfig, Repository } from '../types/github';
 import { Modal } from './Modal';
 
@@ -188,7 +188,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                   disabled={!newRepoInput.trim() || isValidating}
                   className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <PlusIcon className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                   <span>{isValidating ? 'Validando...' : 'Agregar'}</span>
                 </button>
               </div>
@@ -197,7 +197,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
               {validationError && (
                 <div className="mt-3 p-3 bg-red-50 border-l-4 border-red-500 rounded">
                   <div className="flex items-start gap-2">
-                    <XCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
                       <pre className="text-sm text-red-800 whitespace-pre-wrap font-sans">
                         {validationError}
@@ -244,7 +244,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                       onClick={() => handleRemoveRepo(index)}
                       className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
                     >
-                      <TrashIcon className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                       <span>Eliminar</span>
                     </button>
                   </div>
@@ -261,7 +261,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
               disabled={isSaving}
               className="flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded font-medium hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <XCircleIcon className="w-5 h-5" />
+              <XCircle className="w-5 h-5" />
               <span>Cancelar</span>
             </button>
             <button
@@ -269,7 +269,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
               disabled={isSaving || repositories.length === 0}
               className="flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCircleIcon className="w-5 h-5" />
+              <CheckCircle className="w-5 h-5" />
               <span>{isSaving ? 'Guardando...' : 'Guardar'}</span>
             </button>
           </div>

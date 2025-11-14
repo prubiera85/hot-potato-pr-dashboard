@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tanstack/react-query';
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Settings } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { ConfigPanel } from './components/ConfigPanel';
 import type { DashboardConfig, EnhancedPR } from './types/github';
@@ -227,7 +227,7 @@ function AppContent() {
               onClick={() => setIsConfigOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors shadow-sm"
             >
-              <Cog6ToothIcon className="w-5 h-5" />
+              <Settings className="w-5 h-5" />
               <span>Configuración</span>
             </button>
           </div>
