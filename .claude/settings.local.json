@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm init -y)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init -p)",
+      "mcp__netlify__netlify-coding-rules",
+      "Bash(npm run build:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

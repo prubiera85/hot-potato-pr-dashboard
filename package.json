@@ -1,0 +1,44 @@
+{
+  "name": "hot-potato-pr-dashboard",
+  "version": "1.0.0",
+  "description": "Hot Potato PR Dashboard - Monitor pull requests that need attention",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prubiera85/pr-dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/prubiera85/pr-dashboard/issues"
+  },
+  "homepage": "https://github.com/prubiera85/pr-dashboard#readme",
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@netlify/functions": "^5.1.0",
+    "@octokit/auth-app": "^8.1.2",
+    "@tanstack/react-query": "^5.90.9",
+    "@vitejs/plugin-react": "^5.1.1",
+    "octokit": "^5.0.5",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "vite": "^7.2.2",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@netlify/blobs": "^10.3.3",
+    "@types/react": "^19.2.4",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
+    "typescript": "^5.9.3"
+  }
+}
