@@ -8,10 +8,11 @@ interface DashboardProps {
   prs: EnhancedPR[];
   isLoading: boolean;
   onToggleUrgent: (pr: EnhancedPR) => void;
+  onToggleQuick: (pr: EnhancedPR) => void;
   onRefresh: () => void;
 }
 
-export function Dashboard({ prs, isLoading, onToggleUrgent, onRefresh }: DashboardProps) {
+export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh }: DashboardProps) {
   const [sortBy, setSortBy] = useState<SortOption>('urgent-overdue');
   const [filter, setFilter] = useState<FilterOption>('all');
 
@@ -170,7 +171,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onRefresh }: Dashboa
               Mostrando {sortedPRs.length} de {prs.length} PRs
             </div>
             {sortedPRs.map((pr) => (
-              <PRCard key={`${pr.repo.owner}-${pr.repo.name}-${pr.number}`} pr={pr} onToggleUrgent={onToggleUrgent} />
+              <PRCard key={`${pr.repo.owner}-${pr.repo.name}-${pr.number}`} pr={pr} onToggleUrgent={onToggleUrgent} onToggleQuick={onToggleQuick} />
             ))}
           </div>
         )}

@@ -73,6 +73,7 @@ export default async (req: Request, context: Context) => {
           const missingAssignee = !pr.assignees || pr.assignees.length === 0;
           const missingReviewer = reviewerCount === 0;
           const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
+          const isQuick = pr.labels?.some((label) => label.name.toLowerCase() === "quick") || false;
 
           // Calculate status
           let status: "ok" | "warning" | "overdue" = "ok";
@@ -92,6 +93,7 @@ export default async (req: Request, context: Context) => {
             missingReviewer,
             reviewerCount,
             isUrgent,
+            isQuick,
             repo: {
               owner: repo.owner,
               name: repo.name,

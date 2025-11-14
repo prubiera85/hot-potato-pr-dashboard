@@ -1,14 +1,15 @@
-import { StarIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import { StarIcon, ArrowTopRightOnSquareIcon, BoltIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon, BoltIcon as BoltSolidIcon } from '@heroicons/react/24/solid';
 import type { EnhancedPR } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
 
 interface PRCardProps {
   pr: EnhancedPR;
   onToggleUrgent: (pr: EnhancedPR) => void;
+  onToggleQuick: (pr: EnhancedPR) => void;
 }
 
-export function PRCard({ pr, onToggleUrgent }: PRCardProps) {
+export function PRCard({ pr, onToggleUrgent, onToggleQuick }: PRCardProps) {
   const statusConfig = {
     ok: {
       icon: '✅',
@@ -40,6 +41,7 @@ export function PRCard({ pr, onToggleUrgent }: PRCardProps) {
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{status.icon}</span>
             {pr.isUrgent && <span className="text-2xl">⭐</span>}
+            {pr.isQuick && <span className="text-2xl">⚡</span>}
             <h3 className="text-lg font-semibold text-gray-900">
               <a
                 href={pr.html_url}
@@ -53,8 +55,8 @@ export function PRCard({ pr, onToggleUrgent }: PRCardProps) {
           </div>
 
           <div className="text-sm text-gray-600 mb-3">
-            <span className="font-medium">
-              {pr.repo.owner}/{pr.repo.name}
+            <span className="font-bold text-base text-gray-800">
+              {pr.repo.name}
             </span>
             {' • '}
             <span className={status.textColor}>
@@ -154,6 +156,28 @@ export function PRCard({ pr, onToggleUrgent }: PRCardProps) {
               <>
                 <StarIcon className="w-4 h-4" />
                 <span>Marcar urgente</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => onToggleQuick(pr)}
+            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm rounded font-medium transition-colors w-full ${
+              pr.isQuick
+                ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+            title={pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}
+          >
+            {pr.isQuick ? (
+              <>
+                <BoltSolidIcon className="w-4 h-4" />
+                <span>Rápida</span>
+              </>
+            ) : (
+              <>
+                <BoltIcon className="w-4 h-4" />
+                <span>Marcar rápida</span>
               </>
             )}
           </button>

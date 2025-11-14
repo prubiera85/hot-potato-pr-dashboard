@@ -107,6 +107,36 @@ function AppContent() {
     },
   });
 
+  // Toggle quick mutation
+  const toggleQuickMutation = useMutation({
+    mutationFn: async (pr: EnhancedPR) => {
+      if (isTestMode) {
+        // In test mode, just pretend it worked
+        return { success: true };
+      }
+      const response = await fetch('/api/toggle-quick', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          owner: pr.repo.owner,
+          repo: pr.repo.name,
+          prNumber: pr.number,
+          isQuick: !pr.isQuick,
+        }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to toggle quick');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prs'] });
+    },
+  });
+
   const prs: EnhancedPR[] = prsData?.prs || [];
   const config: DashboardConfig = configData || {
     assignmentTimeLimit: 4,
@@ -202,6 +232,7 @@ function AppContent() {
             prs={prs}
             isLoading={isLoading && !isTestMode}
             onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
+            onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
             onRefresh={() => refetch()}
           />
         )}
