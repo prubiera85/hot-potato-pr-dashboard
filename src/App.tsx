@@ -18,6 +18,7 @@ const queryClient = new QueryClient({
 function AppContent() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
+  const [isGifModalOpen, setIsGifModalOpen] = useState(false);
 
   // Fetch PRs and config
   const {
@@ -123,7 +124,8 @@ function AppContent() {
             <img
               src="/hot-potato-logo.png"
               alt="Hot Potato Logo"
-              className="h-16 w-16 object-contain"
+              className="h-16 w-16 object-contain transition-transform duration-300 hover:animate-wiggle cursor-pointer"
+              onClick={() => setIsGifModalOpen(true)}
             />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Hot Potato PR Dashboard</h1>
@@ -144,7 +146,7 @@ function AppContent() {
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                 <span className="ml-3 text-sm font-medium text-gray-700">
-                  {isTestMode ? '🧪 Modo Test' : 'Modo Normal'}
+                  Ver mockup
                 </span>
               </label>
             </div>
@@ -220,6 +222,33 @@ function AppContent() {
         onSave={(newConfig) => saveConfigMutation.mutate(newConfig)}
         isSaving={saveConfigMutation.isPending}
       />
+
+      {/* Burning Potato GIF Modal */}
+      {isGifModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setIsGifModalOpen(false)}
+        >
+          <div
+            className="relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src="/burning-potato.gif"
+              alt="Burning Potato"
+              className="max-w-full max-h-screen object-contain rounded-lg shadow-2xl"
+            />
+            <button
+              onClick={() => setIsGifModalOpen(false)}
+              className="absolute top-4 right-4 bg-white text-gray-800 rounded-full p-2 hover:bg-gray-100 transition-colors shadow-lg"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

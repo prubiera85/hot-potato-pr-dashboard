@@ -23,9 +23,9 @@ export default async (req: Request, context: Context) => {
       );
     }
 
-    const appId = process.env.GITHUB_APP_ID;
-    const privateKey = process.env.GITHUB_PRIVATE_KEY;
-    const installationId = process.env.GITHUB_INSTALLATION_ID;
+    const appId = Netlify.env.get('GITHUB_APP_ID');
+    const privateKey = Netlify.env.get('GITHUB_APP_PRIVATE_KEY');
+    const installationId = Netlify.env.get('GITHUB_APP_INSTALLATION_ID');
 
     if (!appId || !privateKey || !installationId) {
       return new Response(

@@ -253,16 +253,26 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
             </div>
           </div>
 
-        {/* Save Button */}
+        {/* Action Buttons */}
         <div className="border-t pt-4">
-          <button
-            onClick={handleSave}
-            disabled={isSaving || repositories.length === 0}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <CheckCircleIcon className="w-5 h-5" />
-            <span>{isSaving ? 'Guardando...' : 'Guardar configuración'}</span>
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={isSaving}
+              className="flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded font-medium hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <XCircleIcon className="w-5 h-5" />
+              <span>Cancelar</span>
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || repositories.length === 0}
+              className="flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <CheckCircleIcon className="w-5 h-5" />
+              <span>{isSaving ? 'Guardando...' : 'Guardar'}</span>
+            </button>
+          </div>
           {repositories.length === 0 && (
             <p className="text-xs text-red-600 mt-2 text-center">
               Debes agregar al menos un repositorio
