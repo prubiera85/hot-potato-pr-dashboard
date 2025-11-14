@@ -38,6 +38,10 @@ export function isUrgent(pr: GitHubPullRequest): boolean {
   return pr.labels.some(label => label.name.toLowerCase() === 'urgent');
 }
 
+export function isQuick(pr: GitHubPullRequest): boolean {
+  return pr.labels.some(label => label.name.toLowerCase() === 'quick');
+}
+
 export function enhancePR(
   pr: GitHubPullRequest,
   owner: string,
@@ -50,6 +54,7 @@ export function enhancePR(
   const missingAssignee = pr.assignees.length === 0;
   const missingReviewer = reviewerCount === 0;
   const urgent = isUrgent(pr);
+  const quick = isQuick(pr);
   const status = calculatePRStatus(pr, timeLimit, warningThreshold);
 
   return {
@@ -60,6 +65,7 @@ export function enhancePR(
     missingReviewer,
     reviewerCount,
     isUrgent: urgent,
+    isQuick: quick,
     repo: {
       owner,
       name: repo,
