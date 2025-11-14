@@ -29,8 +29,10 @@ export const dummyPRs: EnhancedPR[] = [
     missingAssignee: true,
     missingReviewer: true,
     reviewerCount: 0,
+    commentCount: 3,
     isUrgent: true,
-    isQuick: false,    repo: {
+    isQuick: false,
+    repo: {
       owner: 'acme-corp',
       name: 'backend-api',
     },
@@ -69,6 +71,7 @@ export const dummyPRs: EnhancedPR[] = [
     missingAssignee: false,
     missingReviewer: true,
     reviewerCount: 0,
+    commentCount: 5,
     isUrgent: false,
     isQuick: false,    repo: {
       owner: 'acme-corp',
@@ -117,6 +120,7 @@ export const dummyPRs: EnhancedPR[] = [
     missingAssignee: false,
     missingReviewer: false,
     reviewerCount: 1,
+    commentCount: 5,
     isUrgent: true,
     isQuick: false,    repo: {
       owner: 'acme-corp',
@@ -157,6 +161,7 @@ export const dummyPRs: EnhancedPR[] = [
     missingAssignee: true,
     missingReviewer: false,
     reviewerCount: 1,
+    commentCount: 5,
     isUrgent: false,
     isQuick: false,    repo: {
       owner: 'acme-corp',
@@ -210,6 +215,7 @@ export const dummyPRs: EnhancedPR[] = [
     missingAssignee: false,
     missingReviewer: false,
     reviewerCount: 2,
+    commentCount: 5,
     isUrgent: false,
     isQuick: false,    repo: {
       owner: 'acme-corp',

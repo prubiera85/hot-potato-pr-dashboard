@@ -42,6 +42,7 @@ export interface EnhancedPR extends GitHubPullRequest {
   missingAssignee: boolean;
   missingReviewer: boolean;
   reviewerCount: number;
+  commentCount: number;
   isUrgent: boolean;
   isQuick: boolean;
 
