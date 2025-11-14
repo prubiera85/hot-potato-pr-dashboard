@@ -1,44 +1,9 @@
 import type { Context, Config } from "@netlify/functions";
-import { Octokit } from "octokit";
-import { createAppAuth } from "@octokit/auth-app";
 import { getStore } from "@netlify/blobs";
+import { getInstallationOctokit } from "./lib/github-auth.mts";
 
 export default async (req: Request, context: Context) => {
   try {
-    // Get GitHub App credentials from environment
-    const appId = Netlify.env.get("GITHUB_APP_ID");
-    const privateKey = Netlify.env.get("GITHUB_APP_PRIVATE_KEY");
-    const installationId = Netlify.env.get("GITHUB_APP_INSTALLATION_ID");
-
-    if (!appId || !privateKey || !installationId) {
-      return new Response(
-        JSON.stringify({
-          error: "GitHub App not configured. Please set GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, and GITHUB_APP_INSTALLATION_ID environment variables.",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Initialize Octokit with App authentication
-    // Handle private key format - support both literal \n and real newlines
-    let formattedPrivateKey = privateKey;
-    if (!privateKey.includes("\n") && privateKey.includes("\\n")) {
-      // If it contains literal \n strings, replace them with real newlines
-      formattedPrivateKey = privateKey.replace(/\\n/g, "\n");
-    }
-
-    const octokit = new Octokit({
-      authStrategy: createAppAuth,
-      auth: {
-        appId,
-        privateKey: formattedPrivateKey,
-        installationId,
-      },
-    });
-
     // Get configuration from Netlify Blobs
     const configStore = getStore("pr-dashboard-config");
     const configData = await configStore.get("config", { type: "json" });
@@ -55,59 +20,85 @@ export default async (req: Request, context: Context) => {
     const allPRs = [];
     const errors: Record<string, string> = {};
 
+    // Group repositories by owner to reuse Octokit instances
+    const reposByOwner = new Map<string, typeof config.repositories>();
     for (const repo of config.repositories) {
       if (!repo.enabled) continue;
 
+      const repos = reposByOwner.get(repo.owner) || [];
+      repos.push(repo);
+      reposByOwner.set(repo.owner, repos);
+    }
+
+    // Process repositories by owner
+    for (const [owner, repos] of reposByOwner.entries()) {
       try {
-        const { data: pulls } = await octokit.rest.pulls.list({
-          owner: repo.owner,
-          repo: repo.name,
-          state: "open",
-          per_page: 100,
-        });
+        // Get Octokit instance for this owner's installation
+        const octokit = await getInstallationOctokit(owner);
 
-        // Enhance each PR with computed metadata
-        const enhancedPRs = pulls.map((pr) => {
-          const hoursOpen = (Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60);
-          const reviewerCount = pr.requested_reviewers?.length || 0;
-          const missingAssignee = !pr.assignees || pr.assignees.length === 0;
-          const missingReviewer = reviewerCount === 0;
-          const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
-          const isQuick = pr.labels?.some((label) => label.name.toLowerCase() === "quick") || false;
-
-          // Calculate status
-          let status: "ok" | "warning" | "overdue" = "ok";
-          if (missingAssignee || missingReviewer) {
-            if (hoursOpen >= config.assignmentTimeLimit) {
-              status = "overdue";
-            } else if ((hoursOpen / config.assignmentTimeLimit) * 100 >= config.warningThreshold) {
-              status = "warning";
-            }
-          }
-
-          return {
-            ...pr,
-            status,
-            hoursOpen,
-            missingAssignee,
-            missingReviewer,
-            reviewerCount,
-            isUrgent,
-            isQuick,
-            repo: {
+        for (const repo of repos) {
+          try {
+            const { data: pulls } = await octokit.rest.pulls.list({
               owner: repo.owner,
-              name: repo.name,
-            },
-          };
-        });
+              repo: repo.name,
+              state: "open",
+              per_page: 100,
+            });
 
-        allPRs.push(...enhancedPRs);
+            // Enhance each PR with computed metadata
+            const enhancedPRs = pulls.map((pr) => {
+              const hoursOpen = (Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60);
+              const reviewerCount = pr.requested_reviewers?.length || 0;
+              const missingAssignee = !pr.assignees || pr.assignees.length === 0;
+              const missingReviewer = reviewerCount === 0;
+              const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
+              const isQuick = pr.labels?.some((label) => label.name.toLowerCase() === "quick") || false;
+
+              // Calculate status
+              let status: "ok" | "warning" | "overdue" = "ok";
+              if (missingAssignee || missingReviewer) {
+                if (hoursOpen >= config.assignmentTimeLimit) {
+                  status = "overdue";
+                } else if ((hoursOpen / config.assignmentTimeLimit) * 100 >= config.warningThreshold) {
+                  status = "warning";
+                }
+              }
+
+              return {
+                ...pr,
+                status,
+                hoursOpen,
+                missingAssignee,
+                missingReviewer,
+                reviewerCount,
+                isUrgent,
+                isQuick,
+                repo: {
+                  owner: repo.owner,
+                  name: repo.name,
+                },
+              };
+            });
+
+            allPRs.push(...enhancedPRs);
+          } catch (error) {
+            const repoName = `${repo.owner}/${repo.name}`;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error fetching PRs from ${repoName}:`, error);
+            errors[repoName] = errorMessage;
+            // Continue with other repos even if one fails
+          }
+        }
       } catch (error) {
-        const repoName = `${repo.owner}/${repo.name}`;
+        // Error getting Octokit for this owner
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Error fetching PRs from ${repoName}:`, error);
-        errors[repoName] = errorMessage;
-        // Continue with other repos even if one fails
+        console.error(`Error authenticating for owner ${owner}:`, error);
+
+        // Mark all repos for this owner as errored
+        for (const repo of repos) {
+          const repoName = `${repo.owner}/${repo.name}`;
+          errors[repoName] = errorMessage;
+        }
       }
     }
 

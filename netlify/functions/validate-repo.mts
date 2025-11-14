@@ -1,6 +1,5 @@
 import type { Context } from '@netlify/functions';
-import { Octokit } from '@octokit/rest';
-import { createAppAuth } from '@octokit/auth-app';
+import { getInstallationOctokit } from './lib/github-auth.mts';
 
 export default async (req: Request, context: Context) => {
   if (req.method !== 'POST') {
@@ -23,42 +22,12 @@ export default async (req: Request, context: Context) => {
       );
     }
 
-    const appId = Netlify.env.get('GITHUB_APP_ID');
-    const privateKey = Netlify.env.get('GITHUB_APP_PRIVATE_KEY');
-    const installationId = Netlify.env.get('GITHUB_APP_INSTALLATION_ID');
+    // Get Octokit instance for this owner's installation
+    const octokit = await getInstallationOctokit(owner);
 
-    if (!appId || !privateKey || !installationId) {
-      return new Response(
-        JSON.stringify({
-          error: 'GitHub App not configured',
-          valid: false,
-        }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    // Format private key (handle \n as literal string)
-    let formattedPrivateKey = privateKey;
-    if (!privateKey.includes('\n') && privateKey.includes('\\n')) {
-      formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
-    }
-
-    // Create authenticated Octokit instance
-    const octokit = new Octokit({
-      authStrategy: createAppAuth,
-      auth: {
-        appId,
-        privateKey: formattedPrivateKey,
-        installationId,
-      },
-    });
-
-    // Try to get repository info
+    // Try to access the repository
     try {
-      const { data } = await octokit.repos.get({
+      await octokit.rest.repos.get({
         owner,
         repo,
       });
@@ -66,41 +35,62 @@ export default async (req: Request, context: Context) => {
       return new Response(
         JSON.stringify({
           valid: true,
-          message: `✅ Repositorio accesible: ${data.full_name}`,
-          private: data.private,
+          message: `Successfully validated access to ${owner}/${repo}`,
         }),
         {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         }
       );
-    } catch (repoError: any) {
-      let errorMessage = 'Error al acceder al repositorio';
+    } catch (error: any) {
+      let errorMessage = 'Unknown error occurred';
+      let errorDetails = '';
 
-      if (repoError.status === 404) {
-        errorMessage = `❌ El repositorio "${owner}/${repo}" no existe o la GitHub App no tiene acceso. Verifica que:\n1. El repositorio existe\n2. La GitHub App está instalada en este repositorio`;
-      } else if (repoError.status === 403) {
-        errorMessage = `🔒 No tienes permisos para acceder a "${owner}/${repo}". Instala la GitHub App en este repositorio.`;
-      } else {
-        errorMessage = `⚠️ Error al validar "${owner}/${repo}": ${repoError.message}`;
+      if (error.status === 404) {
+        errorMessage = `Repository not found or GitHub App doesn't have access`;
+        errorDetails = `Repository: ${owner}/${repo}\n\nPossible reasons:\n1. Repository doesn't exist\n2. GitHub App is not installed for "${owner}"\n3. Repository is not included in the app's access permissions\n\nPlease ensure:\n- The GitHub App is installed for "${owner}"\n- The repository is selected in the app's repository access settings`;
+      } else if (error.status === 403) {
+        errorMessage = `Access forbidden`;
+        errorDetails = `Repository: ${owner}/${repo}\n\nThe GitHub App doesn't have permission to access this repository.\n\nPlease check:\n- The app has the required permissions\n- The repository is selected in the app's access settings`;
+      } else if (error.message) {
+        errorMessage = error.message;
+        errorDetails = `Repository: ${owner}/${repo}\n\nError: ${error.message}`;
       }
 
       return new Response(
         JSON.stringify({
           valid: false,
           error: errorMessage,
+          details: errorDetails,
         }),
         {
-          status: 200, // Return 200 so the frontend can handle the validation error
+          status: 200, // Return 200 even for validation failures
           headers: { 'Content-Type': 'application/json' },
         }
       );
     }
   } catch (error: any) {
-    console.error('Validation error:', error);
+    console.error('Error in validate-repo function:', error);
+
+    // Handle installation not found errors specially
+    if (error.message && error.message.includes('not installed')) {
+      return new Response(
+        JSON.stringify({
+          valid: false,
+          error: error.message,
+          details: error.message,
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
-        error: 'Error interno al validar repositorio',
+        error: 'Failed to validate repository',
+        details: error.message || String(error),
         valid: false,
       }),
       {

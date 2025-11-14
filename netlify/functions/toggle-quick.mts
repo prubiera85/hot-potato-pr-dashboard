@@ -1,6 +1,5 @@
 import type { Context, Config } from "@netlify/functions";
-import { Octokit } from "octokit";
-import { createAppAuth } from "@octokit/auth-app";
+import { getInstallationOctokit } from "./lib/github-auth.mts";
 
 export default async (req: Request, context: Context) => {
   if (req.method !== "POST") {
@@ -25,39 +24,8 @@ export default async (req: Request, context: Context) => {
       );
     }
 
-    // Get GitHub App credentials from environment
-    const appId = Netlify.env.get("GITHUB_APP_ID");
-    const privateKey = Netlify.env.get("GITHUB_APP_PRIVATE_KEY");
-    const installationId = Netlify.env.get("GITHUB_APP_INSTALLATION_ID");
-
-    if (!appId || !privateKey || !installationId) {
-      return new Response(
-        JSON.stringify({
-          error: "GitHub App not configured",
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Initialize Octokit with App authentication
-    // Handle private key format - support both literal \n and real newlines
-    let formattedPrivateKey = privateKey;
-    if (!privateKey.includes("\n") && privateKey.includes("\\n")) {
-      // If it contains literal \n strings, replace them with real newlines
-      formattedPrivateKey = privateKey.replace(/\\n/g, "\n");
-    }
-
-    const octokit = new Octokit({
-      authStrategy: createAppAuth,
-      auth: {
-        appId,
-        privateKey: formattedPrivateKey,
-        installationId,
-      },
-    });
+    // Get Octokit instance for this owner's installation
+    const octokit = await getInstallationOctokit(owner);
 
     // Check if "quick" label exists in the repository
     let quickLabelExists = false;
