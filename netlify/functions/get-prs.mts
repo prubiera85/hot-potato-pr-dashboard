@@ -1,5 +1,6 @@
 import type { Context, Config } from "@netlify/functions";
 import { Octokit } from "octokit";
+import { createAppAuth } from "@octokit/auth-app";
 import { getStore } from "@netlify/blobs";
 
 export default async (req: Request, context: Context) => {
@@ -23,7 +24,7 @@ export default async (req: Request, context: Context) => {
 
     // Initialize Octokit with App authentication
     const octokit = new Octokit({
-      authStrategy: require("@octokit/auth-app").createAppAuth,
+      authStrategy: createAppAuth,
       auth: {
         appId,
         privateKey: privateKey.replace(/\\n/g, "\n"),
