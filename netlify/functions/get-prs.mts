@@ -23,11 +23,18 @@ export default async (req: Request, context: Context) => {
     }
 
     // Initialize Octokit with App authentication
+    // Handle private key format - support both literal \n and real newlines
+    let formattedPrivateKey = privateKey;
+    if (!privateKey.includes("\n") && privateKey.includes("\\n")) {
+      // If it contains literal \n strings, replace them with real newlines
+      formattedPrivateKey = privateKey.replace(/\\n/g, "\n");
+    }
+
     const octokit = new Octokit({
       authStrategy: createAppAuth,
       auth: {
         appId,
-        privateKey: privateKey.replace(/\\n/g, "\n"),
+        privateKey: formattedPrivateKey,
         installationId,
       },
     });
@@ -46,6 +53,7 @@ export default async (req: Request, context: Context) => {
 
     // Fetch PRs from all configured repositories
     const allPRs = [];
+    const errors: Record<string, string> = {};
 
     for (const repo of config.repositories) {
       if (!repo.enabled) continue;
@@ -93,12 +101,15 @@ export default async (req: Request, context: Context) => {
 
         allPRs.push(...enhancedPRs);
       } catch (error) {
-        console.error(`Error fetching PRs from ${repo.owner}/${repo.name}:`, error);
+        const repoName = `${repo.owner}/${repo.name}`;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Error fetching PRs from ${repoName}:`, error);
+        errors[repoName] = errorMessage;
         // Continue with other repos even if one fails
       }
     }
 
-    return new Response(JSON.stringify({ prs: allPRs, config }), {
+    return new Response(JSON.stringify({ prs: allPRs, config, errors: Object.keys(errors).length > 0 ? errors : undefined }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
