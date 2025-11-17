@@ -226,11 +226,11 @@ function AppContent() {
             {/* Config Button */}
             <Button
               onClick={() => setIsConfigOpen(true)}
-              variant="link"
-              className="text-amber-600 hover:text-amber-700"
+              variant="ghost"
+              size="icon"
+              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
             >
               <Settings className="w-5 h-5" />
-              <span>Configuración</span>
             </Button>
           </div>
         </div>
