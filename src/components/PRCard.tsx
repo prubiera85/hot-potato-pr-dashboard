@@ -39,9 +39,9 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
   const isOverMaxDays = daysOpen > maxDaysOpen;
 
   // Determine border color based on assignee status only (reviewer doesn't affect)
-  let borderColor = 'border-green-400';
-  let borderLeftColor = 'border-l-green-400';
-  let iconColor = 'text-green-600';
+  let borderColor = 'border-gray-400';
+  let borderLeftColor = 'border-l-gray-400';
+  let iconColor = 'text-blue-600';
 
   if (!hasAssignee) {
     // Missing assignee
@@ -62,8 +62,8 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
     icon: <GitPullRequest className={`w-6 h-6 ${iconColor}`} />,
     borderColor,
     borderLeftColor,
-    textColor: hasAssignee ? 'text-green-800' : 'text-red-800',
-    timeColor: isOverMaxDays ? 'text-red-600 font-bold' : 'text-green-600 font-bold',
+    textColor: hasAssignee ? 'text-gray-800' : 'text-red-800',
+    timeColor: isOverMaxDays ? 'text-red-600 font-bold' : hasAssignee ? 'text-gray-600 font-bold' : 'text-green-600 font-bold',
   };
 
   const status = statusConfig;
@@ -260,10 +260,7 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
                 title={pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}
               >
                 {isProcessingUrgent ? (
-                  <>
-                    <Loader2 className="animate-spin" />
-                    <span>Guardando...</span>
-                  </>
+                  <Loader2 className="animate-spin" />
                 ) : (
                   <>
                     <Star fill={pr.isUrgent ? 'currentColor' : 'none'} />
@@ -281,10 +278,7 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
                 title={pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}
               >
                 {isProcessingQuick ? (
-                  <>
-                    <Loader2 className="animate-spin" />
-                    <span>Guardando...</span>
-                  </>
+                  <Loader2 className="animate-spin" />
                 ) : (
                   <>
                     <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />

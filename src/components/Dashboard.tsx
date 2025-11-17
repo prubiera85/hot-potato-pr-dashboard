@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { RefreshCw, ChevronDown } from 'lucide-react';
+import { RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
 import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
@@ -409,7 +409,10 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
       <div>
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="text-gray-600">Cargando PRs...</div>
+            <div className="flex items-center justify-center gap-2 text-gray-600">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Cargando PRs...</span>
+            </div>
           </div>
         ) : sortedPRs.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">

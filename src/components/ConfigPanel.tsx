@@ -10,9 +10,11 @@ interface ConfigPanelProps {
   config: DashboardConfig;
   onSave: (config: DashboardConfig) => void;
   isSaving: boolean;
+  isTestMode: boolean;
+  onTestModeChange: (value: boolean) => void;
 }
 
-export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: ConfigPanelProps) {
+export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving, isTestMode, onTestModeChange }: ConfigPanelProps) {
   const [timeLimit, setTimeLimit] = useState(config.assignmentTimeLimit);
   const [maxDaysOpen, setMaxDaysOpen] = useState(config.maxDaysOpen || 5);
   const [repositories, setRepositories] = useState<Repository[]>(config.repositories);
@@ -276,8 +278,34 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
             </div>
           </div>
 
+        {/* Test Mode Toggle */}
+        <div className="border-t pt-6">
+          <h3 className="text-md font-semibold text-gray-900 mb-4">
+            🧪 Modo de prueba
+          </h3>
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                Ver mockup demo
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Muestra datos de ejemplo sin conectar a GitHub
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isTestMode}
+                onChange={(e) => onTestModeChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+
         {/* Action Buttons */}
-        <div className="border-t pt-4">
+        <div className="border-t pt-4 mt-6">
           <div className="flex gap-3">
             <Button
               onClick={onClose}
