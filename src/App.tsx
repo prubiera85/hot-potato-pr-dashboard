@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tansta
 import { Settings } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { ConfigPanel } from './components/ConfigPanel';
+import { Button } from './components/ui/button';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs } from './utils/dummyData';
 
@@ -24,7 +25,6 @@ function AppContent() {
   // Fetch PRs and config
   const {
     data: prsData,
-    isLoading,
     isFetching,
     refetch,
   } = useQuery({
@@ -224,13 +224,14 @@ function AppContent() {
               </label>
             </div>
             {/* Config Button */}
-            <button
+            <Button
               onClick={() => setIsConfigOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 transition-colors shadow-sm"
+              variant="link"
+              className="text-amber-600 hover:text-amber-700"
             >
               <Settings className="w-5 h-5" />
               <span>Configuración</span>
-            </button>
+            </Button>
           </div>
         </div>
       </header>
