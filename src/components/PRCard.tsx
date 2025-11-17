@@ -3,7 +3,6 @@ import type { EnhancedPR } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
 import { AvatarGroup, AvatarGroupTooltip } from '@/components/ui/shadcn-io/avatar-group';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { UserSelector } from '@/components/ui/user-selector';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 
@@ -23,7 +22,7 @@ interface PRCardProps {
   onPRUpdated?: () => void;
 }
 
-export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, collaborators = [] }: PRCardProps) {
+export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick }: PRCardProps) {
   // Local state for the PR to avoid reloading all PRs
   const [pr, setPr] = useState(initialPR);
 
@@ -34,14 +33,6 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
 
   // Si tiene assignee, la card siempre es verde, solo cambia el icono del reloj
   const hasAssignee = !pr.missingAssignee;
-  const [isAssigningAssignees, setIsAssigningAssignees] = useState(false);
-  const [isAssigningReviewers, setIsAssigningReviewers] = useState(false);
-
-  // Use collaborators from API or fallback to empty array
-  const availableUsers = collaborators;
-
-  // Filter out PR author from reviewers (GitHub doesn't allow author as reviewer)
-  const availableReviewers = availableUsers.filter(user => user.id !== pr.user.id);
 
   const getStatusIcon = () => {
     if (hasAssignee) {
@@ -82,93 +73,6 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
   };
 
   const status = statusConfig;
-
-  const handleToggleAssignee = async (userId: number) => {
-    const user = availableUsers.find(u => u.id === userId);
-    if (!user) return;
-
-    const isCurrentlyAssigned = pr.assignees.some(a => a.id === userId);
-    const action = isCurrentlyAssigned ? 'remove' : 'add';
-
-    setIsAssigningAssignees(true);
-    try {
-      const response = await fetch('/api/assign-assignees', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner: pr.repo.owner,
-          repo: pr.repo.name,
-          pull_number: pr.number,
-          assignees: [user.login],
-          action,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to assign assignee');
-      }
-
-      // Update local PR state
-      setPr(prevPR => {
-        const newAssignees = isCurrentlyAssigned
-          ? prevPR.assignees.filter(a => a.id !== userId)
-          : [...prevPR.assignees, { ...user, html_url: `https://github.com/${user.login}` }];
-
-        return {
-          ...prevPR,
-          assignees: newAssignees,
-          missingAssignee: newAssignees.length === 0,
-        };
-      });
-    } catch (error) {
-      console.error('Error toggling assignee:', error);
-    } finally {
-      setIsAssigningAssignees(false);
-    }
-  };
-
-  const handleToggleReviewer = async (userId: number) => {
-    const user = availableUsers.find(u => u.id === userId);
-    if (!user) return;
-
-    const isCurrentlyReviewer = pr.requested_reviewers.some(r => r.id === userId);
-    const action = isCurrentlyReviewer ? 'remove' : 'add';
-
-    setIsAssigningReviewers(true);
-    try {
-      const response = await fetch('/api/assign-reviewers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner: pr.repo.owner,
-          repo: pr.repo.name,
-          pull_number: pr.number,
-          reviewers: [user.login],
-          action,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to assign reviewer');
-      }
-
-      // Update local PR state
-      setPr(prevPR => {
-        const newReviewers = isCurrentlyReviewer
-          ? prevPR.requested_reviewers.filter(r => r.id !== userId)
-          : [...prevPR.requested_reviewers, { ...user, html_url: `https://github.com/${user.login}` }];
-
-        return {
-          ...prevPR,
-          requested_reviewers: newReviewers,
-        };
-      });
-    } catch (error) {
-      console.error('Error toggling reviewer:', error);
-    } finally {
-      setIsAssigningReviewers(false);
-    }
-  };
 
   return (
     <div className={`relative bg-white rounded-lg mb-4 shadow-sm hover:shadow-md transition-shadow border-2 ${status.borderColor} border-l-8 ${status.borderLeftColor}`}>
