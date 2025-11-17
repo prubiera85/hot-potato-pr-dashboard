@@ -40,16 +40,17 @@ cp .env.example .env
 # Edita .env con tus credenciales de GitHub App
 ```
 
-4. Inicia el servidor de desarrollo:
+4. Inicia el servidor de desarrollo con todas las funcionalidades de Netlify:
 ```bash
-npm run dev
+npm start
 ```
 
-5. Para desarrollo con Netlify Functions:
-```bash
-npm install -g netlify-cli
-netlify dev
-```
+Esto iniciará:
+- ✅ Servidor de desarrollo en **http://localhost:8888**
+- ✅ Todas las Netlify Functions activas
+- ✅ Netlify Blobs en modo sandbox local
+- ✅ Variables de entorno cargadas
+- ✅ Hot reload automático
 
 ## Deploy en Netlify
 
@@ -109,6 +110,74 @@ Sigue la guía detallada en [GITHUB_APP_SETUP.md](./GITHUB_APP_SETUP.md) para:
 - Ver en GitHub
 - Estado visual (OK ✅ / Warning ⚠️ / Overdue 🚨)
 
+## Netlify Functions Disponibles
+
+El proyecto incluye las siguientes funciones serverless accesibles a través de `/api/*`:
+
+### Funciones de Datos
+- **`GET /api/prs`** - Obtiene todas las PRs abiertas de los repositorios configurados
+  - Retorna PRs con metadata calculada (estado, tiempo abierto, etc.)
+  - Usa Netlify Blobs para leer configuración
+  - Agrupa peticiones por owner para optimizar llamadas a GitHub API
+
+- **`GET /api/collaborators`** - Obtiene la lista de colaboradores de un repositorio
+  - Query params: `owner`, `repo`
+  - Retorna usuarios con acceso al repositorio
+
+### Funciones de Configuración
+- **`GET/POST /api/config`** - Gestiona la configuración del dashboard
+  - Almacena/recupera configuración en Netlify Blobs (store: `pr-dashboard-config`)
+  - Configuración incluye: tiempo SLA, umbral warning, lista de repositorios
+
+### Funciones de Gestión de PRs
+- **`POST /api/toggle-urgent`** - Marca/desmarca una PR como urgente
+  - Gestiona el label "urgent" en GitHub
+
+- **`POST /api/toggle-quick`** - Marca/desmarca una PR como quick
+  - Gestiona el label "quick" en GitHub
+
+- **`POST /api/assign-reviewers`** - Asigna revisores a una PR
+  - Body: `{ owner, repo, prNumber, reviewers: string[] }`
+
+- **`POST /api/assign-assignees`** - Asigna assignees a una PR
+  - Body: `{ owner, repo, prNumber, assignees: string[] }`
+
+### Funciones de Validación
+- **`POST /api/validate-repo`** - Valida acceso a un repositorio
+  - Body: `{ owner, repo }`
+  - Verifica que la GitHub App tenga permisos
+
+## Netlify Blobs
+
+El proyecto utiliza **Netlify Blobs** como sistema de almacenamiento para:
+
+### Stores Utilizados
+- **`pr-dashboard-config`** (global scope): Almacena la configuración del dashboard
+  - Key `config`: Objeto con `assignmentTimeLimit`, `warningThreshold`, `repositories`
+  - Scope global para persistir entre deploys
+  - Consistencia eventual por defecto
+
+### Uso en Desarrollo Local
+- Los Blobs funcionan automáticamente en `netlify dev` (modo sandbox)
+- Los datos se almacenan localmente en `.netlify/blobs-serve`
+- No requiere configuración adicional
+
+### Ejemplo de Uso
+```typescript
+import { getStore } from "@netlify/blobs";
+
+// Leer configuración
+const configStore = getStore("pr-dashboard-config");
+const config = await configStore.get("config", { type: "json" });
+
+// Guardar configuración
+await configStore.setJSON("config", {
+  assignmentTimeLimit: 4,
+  warningThreshold: 80,
+  repositories: [...]
+});
+```
+
 ## Estructura del Proyecto
 
 ```
@@ -117,7 +186,14 @@ pr-dashboard/
 │   └── functions/         # Netlify serverless functions
 │       ├── get-prs.mts           # Obtener PRs de GitHub
 │       ├── toggle-urgent.mts     # Gestionar label urgente
-│       └── config.mts            # Gestionar configuración
+│       ├── toggle-quick.mts      # Gestionar label quick
+│       ├── assign-reviewers.mts  # Asignar revisores
+│       ├── assign-assignees.mts  # Asignar assignees
+│       ├── get-collaborators.mts # Obtener colaboradores
+│       ├── validate-repo.mts     # Validar repositorio
+│       ├── config.mts            # Gestionar configuración
+│       └── lib/
+│           └── github-auth.mts   # Autenticación GitHub App
 ├── src/
 │   ├── components/        # Componentes React
 │   │   ├── Dashboard.tsx         # Vista principal

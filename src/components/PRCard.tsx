@@ -1,9 +1,11 @@
 import { Star, ExternalLink, Zap, Loader2, Clock, GitPullRequest, MessageSquare, User, Eye, AlertCircle } from 'lucide-react';
 import type { EnhancedPR } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
-import { AvatarGroup } from '@/components/ui/avatar-group';
+import { AvatarGroup, AvatarGroupTooltip } from '@/components/ui/shadcn-io/avatar-group';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { UserSelector } from '@/components/ui/user-selector';
-import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 
 interface Collaborator {
   id: number;
@@ -21,11 +23,17 @@ interface PRCardProps {
   onPRUpdated?: () => void;
 }
 
-export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, collaborators = [], onPRUpdated }: PRCardProps) {
+export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, collaborators = [] }: PRCardProps) {
+  // Local state for the PR to avoid reloading all PRs
+  const [pr, setPr] = useState(initialPR);
+
+  // Update local PR when prop changes
+  useEffect(() => {
+    setPr(initialPR);
+  }, [initialPR]);
+
   // Si tiene assignee, la card siempre es verde, solo cambia el icono del reloj
   const hasAssignee = !pr.missingAssignee;
-  const [selectedAssignees, setSelectedAssignees] = useState<number[]>([]);
-  const [selectedReviewers, setSelectedReviewers] = useState<number[]>([]);
   const [isAssigningAssignees, setIsAssigningAssignees] = useState(false);
   const [isAssigningReviewers, setIsAssigningReviewers] = useState(false);
 
@@ -100,8 +108,18 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
         throw new Error('Failed to assign assignee');
       }
 
-      // Refresh PR data
-      onPRUpdated?.();
+      // Update local PR state
+      setPr(prevPR => {
+        const newAssignees = isCurrentlyAssigned
+          ? prevPR.assignees.filter(a => a.id !== userId)
+          : [...prevPR.assignees, { ...user, html_url: `https://github.com/${user.login}` }];
+
+        return {
+          ...prevPR,
+          assignees: newAssignees,
+          missingAssignee: newAssignees.length === 0,
+        };
+      });
     } catch (error) {
       console.error('Error toggling assignee:', error);
     } finally {
@@ -134,8 +152,17 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
         throw new Error('Failed to assign reviewer');
       }
 
-      // Refresh PR data
-      onPRUpdated?.();
+      // Update local PR state
+      setPr(prevPR => {
+        const newReviewers = isCurrentlyReviewer
+          ? prevPR.requested_reviewers.filter(r => r.id !== userId)
+          : [...prevPR.requested_reviewers, { ...user, html_url: `https://github.com/${user.login}` }];
+
+        return {
+          ...prevPR,
+          requested_reviewers: newReviewers,
+        };
+      });
     } catch (error) {
       console.error('Error toggling reviewer:', error);
     } finally {
@@ -204,78 +231,55 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
 
             {/* Action buttons row at bottom */}
             <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => onToggleUrgent(pr)}
-                disabled={isProcessingUrgent}
-                className={`flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded font-medium transition-colors ${
-                  pr.isUrgent
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}
+              <Button
+                asChild
+                variant="link"
+                size="sm"
+                className="text-blue-600 hover:text-blue-700"
               >
-                {isProcessingUrgent ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Guardando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Star className="w-4 h-4" fill={pr.isUrgent ? 'currentColor' : 'none'} />
-                    <span>{pr.isUrgent ? 'Urgente' : 'Marcar urgente'}</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => onToggleQuick(pr)}
-                disabled={isProcessingQuick}
-                className={`flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded font-medium transition-colors ${
-                  pr.isQuick
-                    ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}
-              >
-                {isProcessingQuick ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Guardando...</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4" fill={pr.isQuick ? 'currentColor' : 'none'} />
-                    <span>{pr.isQuick ? 'Rápida' : 'Marcar rápida'}</span>
-                  </>
-                )}
-              </button>
-
-              <a
-                href={pr.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 px-4 py-2 text-sm rounded font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span>Ver en GitHub</span>
-              </a>
+                <a
+                  href={pr.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink />
+                  <span>Ver en GitHub</span>
+                </a>
+              </Button>
             </div>
           </div>
 
           {/* Right sidebar - Assignment section */}
           <div className="w-64 flex-shrink-0 border-l border-gray-200 pl-4">
             {/* Assignees Section */}
-            <div className="mb-6">
+            {/* <div className="mb-6"> */}
+            <div className="mb-2">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-gray-600" />
-                  <h4 className="text-sm font-semibold text-gray-700">Asignados</h4>
+                  <h4 className="text-sm font-semibold text-gray-700">Asignees</h4>
                 </div>
-                <AvatarGroup users={pr.assignees} />
+                {pr.assignees.length === 0 ? (
+                  <div className="flex items-center gap-1 text-sm text-red-400 font-medium">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Sin asignar</span>
+                  </div>
+                ) : (
+                  <AvatarGroup variant="motion" className="h-8 -space-x-2">
+                    {pr.assignees.map((assignee) => (
+                      <Avatar key={assignee.id} className="h-8 w-8 border-2 border-white">
+                        <AvatarImage src={assignee.avatar_url} alt={assignee.login} />
+                        <AvatarFallback>{assignee.login.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarGroupTooltip>
+                          <p>@{assignee.login}</p>
+                        </AvatarGroupTooltip>
+                      </Avatar>
+                    ))}
+                  </AvatarGroup>
+                )}
               </div>
 
-
-              <div>
+              {/* <div>
                 {isAssigningAssignees ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -288,20 +292,37 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                     onToggleUser={handleToggleAssignee}
                   />
                 )}
-              </div>
+              </div> */}
             </div>
 
             {/* Reviewers Section */}
-            <div>
+            <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Eye className="w-4 h-4 text-gray-600" />
                   <h4 className="text-sm font-semibold text-gray-700">Reviewers</h4>
                 </div>
-                <AvatarGroup users={pr.requested_reviewers} />
+                {pr.requested_reviewers.length === 0 ? (
+                  <div className="flex items-center gap-1 text-sm text-red-400 font-medium">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Sin reviewers</span>
+                  </div>
+                ) : ( 
+                <AvatarGroup variant="motion" className="h-8 -space-x-2">
+                  {pr.requested_reviewers.map((reviewer) => (
+                    <Avatar key={reviewer.id} className="h-8 w-8 border-2 border-white">
+                      <AvatarImage src={reviewer.avatar_url} alt={reviewer.login} />
+                      <AvatarFallback>{reviewer.login.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarGroupTooltip>
+                        <p>@{reviewer.login}</p>
+                      </AvatarGroupTooltip>
+                    </Avatar>
+                  ))}
+                </AvatarGroup>
+                )}
               </div>
 
-              <div>
+              {/* <div>
                 {isAssigningReviewers ? (
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -314,9 +335,55 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                     onToggleUser={handleToggleReviewer}
                   />
                 )}
-              </div>
+              </div> */}
+
+
+
             </div>
+            {/* Botones de urgente y rápida Section */}
+            
+            <div className="flex gap-2"> <Button
+                onClick={() => onToggleUrgent(pr)}
+                disabled={isProcessingUrgent}
+                variant={pr.isUrgent ? "destructive" : "outline"}
+                size="sm"
+                title={pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}
+              >
+                {isProcessingUrgent ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Star fill={pr.isUrgent ? 'currentColor' : 'none'} />
+                    <span>Urgente</span>
+                  </>
+                )}
+              </Button>
+
+              <Button
+                onClick={() => onToggleQuick(pr)}
+                disabled={isProcessingQuick}
+                variant={pr.isQuick ? "default" : "outline"}
+                size="sm"
+                className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                title={pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}
+              >
+                {isProcessingQuick ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />
+                    <span>Rápida</span>
+                  </>
+                )}
+              </Button></div>
           </div>
+          
         </div>
       </div>
     </div>
