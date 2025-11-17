@@ -65,6 +65,8 @@ export function enhancePR(
     missingReviewer,
     reviewerCount,
     commentCount: 0,
+    issueComments: 0,
+    reviewComments: 0,
     isUrgent: urgent,
     isQuick: quick,
     repo: {
