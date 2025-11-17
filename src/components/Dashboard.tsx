@@ -19,7 +19,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: DashboardProps) {
-  const [sortBy, setSortBy] = useState<SortOption>('time-open-desc');
+  const [sortBy, setSortBy] = useState<SortOption>('time-open-asc');
   const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned']));
   const [activeRepos, setActiveRepos] = useState<Set<string>>(new Set());
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
@@ -403,8 +403,8 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                 <SelectValue placeholder="Seleccionar orden" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="time-open-desc">Tiempo (más a menos)</SelectItem>
-                <SelectItem value="time-open-asc">Tiempo (menos a más)</SelectItem>
+                <SelectItem value="time-open-asc">Más nuevas primero</SelectItem>
+                <SelectItem value="time-open-desc">Más antiguas primero</SelectItem>
               </SelectContent>
             </Select>
           </div>
