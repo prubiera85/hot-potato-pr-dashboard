@@ -6,14 +6,13 @@ export function calculatePRStatus(
 ): PRStatus {
   const hoursOpen = getHoursOpen(pr);
   const hasAssignee = pr.assignees.length > 0;
-  const hasReviewer = pr.requested_reviewers.length > 0;
 
-  // If both are assigned, status is always OK
-  if (hasAssignee && hasReviewer) {
+  // If has assignee, status is always OK
+  if (hasAssignee) {
     return 'ok';
   }
 
-  // Check if time limit exceeded (warning - yellow border)
+  // No assignee - check if time limit exceeded (warning - yellow border)
   if (hoursOpen >= timeLimit) {
     return 'warning';
   }

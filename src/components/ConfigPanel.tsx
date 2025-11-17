@@ -147,7 +147,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tiempo máximo sin assignee/reviewer (horas)
+                Tiempo máximo sin assignee (horas)
               </label>
               <input
                 type="number"
@@ -157,7 +157,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                ⚠️ PRs sin assignee o reviewer por más de {timeLimit} horas se marcarán con borde <span className="text-yellow-600 font-bold">amarillo</span>
+                ⚠️ PRs sin assignee por más de {timeLimit} horas se marcarán con borde <span className="text-yellow-600 font-bold">amarillo</span>
               </p>
             </div>
 

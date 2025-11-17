@@ -35,17 +35,16 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
 
   // Calculate visual status
   const hasAssignee = !pr.missingAssignee;
-  const hasReviewer = !pr.missingReviewer;
   const daysOpen = pr.hoursOpen / 24;
   const isOverMaxDays = daysOpen > maxDaysOpen;
 
-  // Determine border color based on assignment status
+  // Determine border color based on assignee status only (reviewer doesn't affect)
   let borderColor = 'border-green-400';
   let borderLeftColor = 'border-l-green-400';
   let iconColor = 'text-green-600';
 
-  if (!hasAssignee || !hasReviewer) {
-    // Missing assignee or reviewer
+  if (!hasAssignee) {
+    // Missing assignee
     if (pr.status === 'warning') {
       // Over time limit - yellow warning
       borderColor = 'border-yellow-400';
@@ -63,7 +62,7 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
     icon: <GitPullRequest className={`w-6 h-6 ${iconColor}`} />,
     borderColor,
     borderLeftColor,
-    textColor: hasAssignee && hasReviewer ? 'text-green-800' : 'text-red-800',
+    textColor: hasAssignee ? 'text-green-800' : 'text-red-800',
     timeColor: isOverMaxDays ? 'text-red-600 font-bold' : 'text-green-600 font-bold',
   };
 
