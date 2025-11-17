@@ -62,8 +62,7 @@ export interface Repository {
 }
 
 export interface DashboardConfig {
-  assignmentTimeLimit: number; // in hours
-  warningThreshold: number; // percentage (e.g., 80)
+  assignmentTimeLimit: number; // max hours without assignee/reviewer (shows warning)
   maxDaysOpen: number; // max days a PR should be open (e.g., 5)
   repositories: Repository[];
 }

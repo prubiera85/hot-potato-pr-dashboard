@@ -183,7 +183,6 @@ function AppContent() {
   const prs: EnhancedPR[] = prsData?.prs || [];
   const config: DashboardConfig = {
     assignmentTimeLimit: configData?.assignmentTimeLimit || 4,
-    warningThreshold: configData?.warningThreshold || 80,
     maxDaysOpen: configData?.maxDaysOpen || 5,
     repositories: configData?.repositories || [],
   };

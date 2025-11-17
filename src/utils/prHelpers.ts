@@ -2,8 +2,7 @@ import type { GitHubPullRequest, EnhancedPR, PRStatus, SortOption } from '../typ
 
 export function calculatePRStatus(
   pr: GitHubPullRequest,
-  timeLimit: number,
-  warningThreshold: number
+  timeLimit: number
 ): PRStatus {
   const hoursOpen = getHoursOpen(pr);
   const hasAssignee = pr.assignees.length > 0;
@@ -14,14 +13,8 @@ export function calculatePRStatus(
     return 'ok';
   }
 
-  // Check if time limit exceeded
+  // Check if time limit exceeded (warning - yellow border)
   if (hoursOpen >= timeLimit) {
-    return 'overdue';
-  }
-
-  // Check if warning threshold reached
-  const percentageOfTime = (hoursOpen / timeLimit) * 100;
-  if (percentageOfTime >= warningThreshold) {
     return 'warning';
   }
 
@@ -46,8 +39,7 @@ export function enhancePR(
   pr: GitHubPullRequest,
   owner: string,
   repo: string,
-  timeLimit: number,
-  warningThreshold: number
+  timeLimit: number
 ): EnhancedPR {
   const hoursOpen = getHoursOpen(pr);
   const reviewerCount = pr.requested_reviewers.length;
@@ -55,7 +47,7 @@ export function enhancePR(
   const missingReviewer = reviewerCount === 0;
   const urgent = isUrgent(pr);
   const quick = isQuick(pr);
-  const status = calculatePRStatus(pr, timeLimit, warningThreshold);
+  const status = calculatePRStatus(pr, timeLimit);
 
   return {
     ...pr,

@@ -3,7 +3,7 @@ import { getStore } from "@netlify/blobs";
 
 const defaultConfig = {
   assignmentTimeLimit: 4,
-  warningThreshold: 80,
+  maxDaysOpen: 5,
   repositories: [],
 };
 
@@ -37,14 +37,10 @@ export default async (req: Request, context: Context) => {
         );
       }
 
-      if (
-        typeof newConfig.warningThreshold !== "number" ||
-        newConfig.warningThreshold < 0 ||
-        newConfig.warningThreshold > 100
-      ) {
+      if (typeof newConfig.maxDaysOpen !== "number" || newConfig.maxDaysOpen <= 0) {
         return new Response(
           JSON.stringify({
-            error: "Invalid warningThreshold. Must be a number between 0 and 100.",
+            error: "Invalid maxDaysOpen. Must be a positive number.",
           }),
           {
             status: 400,

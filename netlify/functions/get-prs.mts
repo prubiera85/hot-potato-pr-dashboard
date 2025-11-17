@@ -74,12 +74,15 @@ export default async (req: Request, context: Context) => {
 
                 // Calculate status
                 let status: "ok" | "warning" | "overdue" = "ok";
-                if (!missingAssignee) {
-                  if (hoursOpen >= config.assignmentTimeLimit) {
-                    status = "overdue";
-                  } else if ((hoursOpen / config.assignmentTimeLimit) * 100 >= config.warningThreshold) {
-                    status = "warning";
-                  }
+                const hasAssignee = pr.assignees && pr.assignees.length > 0;
+                const hasReviewer = reviewerCount > 0;
+
+                // If both are assigned, status is always OK
+                if (hasAssignee && hasReviewer) {
+                  status = "ok";
+                } else if (hoursOpen >= config.assignmentTimeLimit) {
+                  // Time limit exceeded without assignee/reviewer - warning (yellow)
+                  status = "warning";
                 }
 
                 return {

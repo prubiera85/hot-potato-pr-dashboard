@@ -29,7 +29,6 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
   const handleSave = () => {
     onSave({
       assignmentTimeLimit: timeLimit,
-      warningThreshold: 80, // Fixed at 80%
       maxDaysOpen: maxDaysOpen,
       repositories,
     });
@@ -158,10 +157,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                PRs sin assignee o reviewer por más de {timeLimit} horas se marcarán como overdue 🚨
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Verás advertencia ⚠️ cuando llegue al 80% del tiempo ({Math.round(timeLimit * 0.8 * 10) / 10}h)
+                ⚠️ PRs sin assignee o reviewer por más de {timeLimit} horas se marcarán con borde <span className="text-yellow-600 font-bold">amarillo</span>
               </p>
             </div>
 
@@ -177,10 +173,10 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                ⏱️ PRs abiertas por más de {maxDaysOpen} días se mostrarán en <span className="text-red-600 font-bold">rojo y negrita</span>
+                ⏱️ PRs abiertas por más de {maxDaysOpen} días se mostrarán en <span className="text-red-600 font-bold">rojo</span>
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                ✅ PRs abiertas por {maxDaysOpen} días o menos se mostrarán en <span className="text-green-600 font-bold">verde y negrita</span>
+                ✅ PRs abiertas por {maxDaysOpen} días o menos se mostrarán en <span className="text-green-600 font-bold">verde</span>
               </p>
             </div>
           </div>

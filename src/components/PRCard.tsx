@@ -33,16 +33,37 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
     setPr(initialPR);
   }, [initialPR]);
 
-  // Si tiene assignee, la card siempre es verde, solo cambia el icono del reloj
+  // Calculate visual status
   const hasAssignee = !pr.missingAssignee;
+  const hasReviewer = !pr.missingReviewer;
   const daysOpen = pr.hoursOpen / 24;
   const isOverMaxDays = daysOpen > maxDaysOpen;
 
+  // Determine border color based on assignment status
+  let borderColor = 'border-green-400';
+  let borderLeftColor = 'border-l-green-400';
+  let iconColor = 'text-green-600';
+
+  if (!hasAssignee || !hasReviewer) {
+    // Missing assignee or reviewer
+    if (pr.status === 'warning') {
+      // Over time limit - yellow warning
+      borderColor = 'border-yellow-400';
+      borderLeftColor = 'border-l-yellow-400';
+      iconColor = 'text-yellow-600';
+    } else {
+      // Within time limit but missing - red
+      borderColor = 'border-red-400';
+      borderLeftColor = 'border-l-red-400';
+      iconColor = 'text-red-600';
+    }
+  }
+
   const statusConfig = {
-    icon: <GitPullRequest className={`w-6 h-6 ${hasAssignee ? 'text-green-600' : 'text-red-600'}`} />,
-    borderColor: hasAssignee ? 'border-green-400' : 'border-red-400',
-    borderLeftColor: hasAssignee ? 'border-l-green-400' : 'border-l-red-400',
-    textColor: hasAssignee ? 'text-green-800' : 'text-red-800',
+    icon: <GitPullRequest className={`w-6 h-6 ${iconColor}`} />,
+    borderColor,
+    borderLeftColor,
+    textColor: hasAssignee && hasReviewer ? 'text-green-800' : 'text-red-800',
     timeColor: isOverMaxDays ? 'text-red-600 font-bold' : 'text-green-600 font-bold',
   };
 
