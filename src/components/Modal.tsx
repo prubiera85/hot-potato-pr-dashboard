@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface ModalProps {
   isOpen: boolean;
@@ -43,12 +44,14 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-            <button
+            <Button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-gray-600"
             >
               <X className="w-6 h-6" />
-            </button>
+            </Button>
           </div>
 
           {/* Content */}

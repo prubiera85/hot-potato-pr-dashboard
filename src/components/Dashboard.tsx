@@ -3,6 +3,7 @@ import { RefreshCw, ChevronDown } from 'lucide-react';
 import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
+import { Button } from './ui/button';
 
 interface DashboardProps {
   prs: EnhancedPR[];
@@ -221,27 +222,30 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700">Filtros:</span>
             <div className="relative" ref={filterDropdownRef}>
-              <button
+              <Button
                 onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1 text-sm rounded font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                variant="default"
+                size="sm"
               >
                 <span>
                   {selectedFilters.size === 0
                     ? 'Todos'
                     : `${selectedFilters.size} filtro${selectedFilters.size > 1 ? 's' : ''}`}
                 </span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
+                <ChevronDown />
+              </Button>
 
               {isFilterDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[250px]">
                   <div className="p-2 border-b border-gray-200 bg-gray-50">
-                    <button
+                    <Button
                       onClick={selectedFilters.size === 0 ? selectAllFilters : clearFilterSelection}
-                      className="w-full px-3 py-1.5 text-sm rounded font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      variant="default"
+                      size="sm"
+                      className="w-full"
                     >
                       {selectedFilters.size === 0 ? 'Seleccionar todos' : 'Limpiar selección'}
-                    </button>
+                    </Button>
                   </div>
                   <div className="p-2">
                     <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
@@ -299,27 +303,31 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700">Repositorios:</span>
               <div className="relative" ref={repoDropdownRef}>
-                <button
+                <Button
                   onClick={() => setIsRepoDropdownOpen(!isRepoDropdownOpen)}
-                  className="flex items-center gap-2 px-3 py-1 text-sm rounded font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                  variant="secondary"
+                  size="sm"
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   <span>
                     {selectedRepos.size === 0
                       ? 'Todos'
                       : `${selectedRepos.size} repo${selectedRepos.size > 1 ? 's' : ''}`}
                   </span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
+                  <ChevronDown />
+                </Button>
 
                 {isRepoDropdownOpen && (
                   <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[300px] max-h-[400px] overflow-y-auto">
                     <div className="p-2 border-b border-gray-200 bg-gray-50">
-                      <button
+                      <Button
                         onClick={selectedRepos.size === 0 ? selectAllRepos : clearRepoSelection}
-                        className="w-full px-3 py-1.5 text-sm rounded font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                        variant="secondary"
+                        size="sm"
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                       >
                         {selectedRepos.size === 0 ? 'Seleccionar todos' : 'Limpiar selección'}
-                      </button>
+                      </Button>
                     </div>
                     <div className="p-2">
                       {repositories.map((repo) => {
@@ -364,14 +372,16 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
           </div>
 
           {/* Refresh */}
-          <button
+          <Button
             onClick={onRefresh}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1 text-sm rounded font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+            variant="default"
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 ml-auto"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={isLoading ? 'animate-spin' : ''} />
             <span>{isLoading ? 'Cargando...' : 'Refrescar'}</span>
-          </button>
+          </Button>
         </div>
       </div>
 

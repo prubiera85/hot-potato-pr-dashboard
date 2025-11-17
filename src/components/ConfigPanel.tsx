@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import type { DashboardConfig, Repository } from '../types/github';
 import { Modal } from './Modal';
+import { Button } from './ui/button';
 
 interface ConfigPanelProps {
   isOpen: boolean;
@@ -183,14 +184,14 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                       : 'border-gray-300 focus:ring-blue-500'
                   }`}
                 />
-                <button
+                <Button
                   onClick={handleAddRepo}
                   disabled={!newRepoInput.trim() || isValidating}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  variant="default"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus />
                   <span>{isValidating ? 'Validando...' : 'Agregar'}</span>
-                </button>
+                </Button>
               </div>
 
               {/* Validation Error Message */}
@@ -240,13 +241,15 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
                         <span className="text-xs text-gray-500">(deshabilitado)</span>
                       )}
                     </div>
-                    <button
+                    <Button
                       onClick={() => handleRemoveRepo(index)}
-                      className="flex items-center gap-1 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:bg-red-50"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 />
                       <span>Eliminar</span>
-                    </button>
+                    </Button>
                   </div>
                 ))
               )}
@@ -256,22 +259,24 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
         {/* Action Buttons */}
         <div className="border-t pt-4">
           <div className="flex gap-3">
-            <button
+            <Button
               onClick={onClose}
               disabled={isSaving}
-              className="flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded font-medium hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="secondary"
+              className="flex-1"
             >
-              <XCircle className="w-5 h-5" />
+              <XCircle />
               <span>Cancelar</span>
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSave}
               disabled={isSaving || repositories.length === 0}
-              className="flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-green-600 text-white rounded font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="default"
+              className="flex-1 bg-green-600 hover:bg-green-700"
             >
-              <CheckCircle className="w-5 h-5" />
+              <CheckCircle />
               <span>{isSaving ? 'Guardando...' : 'Guardar'}</span>
-            </button>
+            </Button>
           </div>
           {repositories.length === 0 && (
             <p className="text-xs text-red-600 mt-2 text-center">
