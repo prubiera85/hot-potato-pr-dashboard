@@ -46,41 +46,61 @@ export default async (req: Request, context: Context) => {
             });
 
             // Enhance each PR with computed metadata
-            const enhancedPRs = pulls.map((pr) => {
-              const hoursOpen = (Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60);
-              const reviewerCount = pr.requested_reviewers?.length || 0;
-              const commentCount = pr.comments || 0;
-              const missingAssignee = !pr.assignees || pr.assignees.length === 0;
-              const missingReviewer = reviewerCount === 0;
-              const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
-              const isQuick = pr.labels?.some((label) => label.name.toLowerCase() === "quick") || false;
+            const enhancedPRs = await Promise.all(
+              pulls.map(async (pr) => {
+                const hoursOpen = (Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60);
+                const reviewerCount = pr.requested_reviewers?.length || 0;
 
-              // Calculate status
-              let status: "ok" | "warning" | "overdue" = "ok";
-              if (!missingAssignee) {
-                if (hoursOpen >= config.assignmentTimeLimit) {
-                  status = "overdue";
-                } else if ((hoursOpen / config.assignmentTimeLimit) * 100 >= config.warningThreshold) {
-                  status = "warning";
+                // Get both types of comments
+                const issueComments = pr.comments || 0; // General conversation comments
+                let reviewComments = 0;
+                try {
+                  const { data: reviews } = await octokit.rest.pulls.listReviewComments({
+                    owner: repo.owner,
+                    repo: repo.name,
+                    pull_number: pr.number,
+                    per_page: 100,
+                  });
+                  reviewComments = reviews.length;
+                } catch (error) {
+                  console.error(`Error fetching review comments for PR #${pr.number}:`, error);
                 }
-              }
 
-              return {
-                ...pr,
-                status,
-                hoursOpen,
-                missingAssignee,
-                missingReviewer,
-                reviewerCount,
-                commentCount,
-                isUrgent,
-                isQuick,
-                repo: {
-                  owner: repo.owner,
-                  name: repo.name,
-                },
-              };
-            });
+                const commentCount = issueComments + reviewComments;
+                const missingAssignee = !pr.assignees || pr.assignees.length === 0;
+                const missingReviewer = reviewerCount === 0;
+                const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
+                const isQuick = pr.labels?.some((label) => label.name.toLowerCase() === "quick") || false;
+
+                // Calculate status
+                let status: "ok" | "warning" | "overdue" = "ok";
+                if (!missingAssignee) {
+                  if (hoursOpen >= config.assignmentTimeLimit) {
+                    status = "overdue";
+                  } else if ((hoursOpen / config.assignmentTimeLimit) * 100 >= config.warningThreshold) {
+                    status = "warning";
+                  }
+                }
+
+                return {
+                  ...pr,
+                  status,
+                  hoursOpen,
+                  missingAssignee,
+                  missingReviewer,
+                  reviewerCount,
+                  commentCount,
+                  issueComments,
+                  reviewComments,
+                  isUrgent,
+                  isQuick,
+                  repo: {
+                    owner: repo.owner,
+                    name: repo.name,
+                  },
+                };
+              })
+            );
 
             allPRs.push(...enhancedPRs);
           } catch (error) {

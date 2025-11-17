@@ -30,6 +30,8 @@ export const dummyPRs: EnhancedPR[] = [
     missingReviewer: true,
     reviewerCount: 0,
     commentCount: 3,
+    issueComments: 2,
+    reviewComments: 1,
     isUrgent: true,
     isQuick: false,
     repo: {
@@ -72,8 +74,11 @@ export const dummyPRs: EnhancedPR[] = [
     missingReviewer: true,
     reviewerCount: 0,
     commentCount: 5,
+    issueComments: 3,
+    reviewComments: 2,
     isUrgent: false,
-    isQuick: false,    repo: {
+    isQuick: false,
+    repo: {
       owner: 'acme-corp',
       name: 'backend-api',
     },
@@ -121,8 +126,11 @@ export const dummyPRs: EnhancedPR[] = [
     missingReviewer: false,
     reviewerCount: 1,
     commentCount: 5,
+    issueComments: 4,
+    reviewComments: 1,
     isUrgent: true,
-    isQuick: false,    repo: {
+    isQuick: false,
+    repo: {
       owner: 'acme-corp',
       name: 'frontend-app',
     },
@@ -162,8 +170,11 @@ export const dummyPRs: EnhancedPR[] = [
     missingReviewer: false,
     reviewerCount: 1,
     commentCount: 5,
+    issueComments: 5,
+    reviewComments: 0,
     isUrgent: false,
-    isQuick: false,    repo: {
+    isQuick: false,
+    repo: {
       owner: 'acme-corp',
       name: 'backend-api',
     },
@@ -216,8 +227,11 @@ export const dummyPRs: EnhancedPR[] = [
     missingReviewer: false,
     reviewerCount: 2,
     commentCount: 5,
+    issueComments: 2,
+    reviewComments: 3,
     isUrgent: false,
-    isQuick: false,    repo: {
+    isQuick: false,
+    repo: {
       owner: 'acme-corp',
       name: 'frontend-app',
     },

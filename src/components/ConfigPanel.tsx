@@ -14,6 +14,7 @@ interface ConfigPanelProps {
 
 export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: ConfigPanelProps) {
   const [timeLimit, setTimeLimit] = useState(config.assignmentTimeLimit);
+  const [maxDaysOpen, setMaxDaysOpen] = useState(config.maxDaysOpen || 5);
   const [repositories, setRepositories] = useState<Repository[]>(config.repositories);
   const [newRepoInput, setNewRepoInput] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -21,6 +22,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
 
   useEffect(() => {
     setTimeLimit(config.assignmentTimeLimit);
+    setMaxDaysOpen(config.maxDaysOpen || 5);
     setRepositories(config.repositories);
   }, [config]);
 
@@ -28,6 +30,7 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
     onSave({
       assignmentTimeLimit: timeLimit,
       warningThreshold: 80, // Fixed at 80%
+      maxDaysOpen: maxDaysOpen,
       repositories,
     });
     onClose();
@@ -140,25 +143,46 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving }: Confi
         {/* SLA Configuration */}
         <div>
           <h3 className="text-md font-semibold text-gray-900 mb-4">
-            ⏱️ Tiempo límite de asignación (SLA)
+            ⏱️ Configuración de tiempos
           </h3>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tiempo máximo sin assignee/reviewer (horas)
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={timeLimit}
-              onChange={(e) => setTimeLimit(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              PRs sin assignee o reviewer por más de {timeLimit} horas se marcarán como overdue 🚨
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Verás advertencia ⚠️ cuando llegue al 80% del tiempo ({Math.round(timeLimit * 0.8 * 10) / 10}h)
-            </p>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tiempo máximo sin assignee/reviewer (horas)
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                PRs sin assignee o reviewer por más de {timeLimit} horas se marcarán como overdue 🚨
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Verás advertencia ⚠️ cuando llegue al 80% del tiempo ({Math.round(timeLimit * 0.8 * 10) / 10}h)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Días máximos que una PR debería estar abierta
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={maxDaysOpen}
+                onChange={(e) => setMaxDaysOpen(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                ⏱️ PRs abiertas por más de {maxDaysOpen} días se mostrarán en <span className="text-red-600 font-bold">rojo y negrita</span>
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                ✅ PRs abiertas por {maxDaysOpen} días o menos se mostrarán en <span className="text-green-600 font-bold">verde y negrita</span>
+              </p>
+            </div>
           </div>
         </div>
 

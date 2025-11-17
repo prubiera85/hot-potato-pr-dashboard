@@ -78,36 +78,11 @@ export function sortPRs(prs: EnhancedPR[], sortBy: SortOption): EnhancedPR[] {
   const sorted = [...prs];
 
   switch (sortBy) {
-    case 'urgent-overdue':
-      return sorted.sort((a, b) => {
-        // Urgent first
-        if (a.isUrgent !== b.isUrgent) return a.isUrgent ? -1 : 1;
-        // Then overdue
-        if (a.status === 'overdue' && b.status !== 'overdue') return -1;
-        if (a.status !== 'overdue' && b.status === 'overdue') return 1;
-        // Then warning
-        if (a.status === 'warning' && b.status === 'ok') return -1;
-        if (a.status === 'ok' && b.status === 'warning') return 1;
-        // Then by missing assignee/reviewer
-        const aMissing = (a.missingAssignee ? 1 : 0) + (a.missingReviewer ? 1 : 0);
-        const bMissing = (b.missingAssignee ? 1 : 0) + (b.missingReviewer ? 1 : 0);
-        if (aMissing !== bMissing) return bMissing - aMissing;
-        // Finally by time open
-        return b.hoursOpen - a.hoursOpen;
-      });
-
-    case 'time-open':
+    case 'time-open-desc':
       return sorted.sort((a, b) => b.hoursOpen - a.hoursOpen);
 
-    case 'reviewers':
-      return sorted.sort((a, b) => {
-        // First by number of reviewers (ascending: 0, 1, 2+)
-        if (a.reviewerCount !== b.reviewerCount) {
-          return a.reviewerCount - b.reviewerCount;
-        }
-        // Then by time open
-        return b.hoursOpen - a.hoursOpen;
-      });
+    case 'time-open-asc':
+      return sorted.sort((a, b) => a.hoursOpen - b.hoursOpen);
 
     default:
       return sorted;

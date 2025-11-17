@@ -4,6 +4,7 @@ import { formatTimeAgo } from '../utils/prHelpers';
 import { AvatarGroup, AvatarGroupTooltip } from '@/components/ui/shadcn-io/avatar-group';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useState, useEffect } from 'react';
 
 interface Collaborator {
@@ -18,11 +19,12 @@ interface PRCardProps {
   onToggleQuick: (pr: EnhancedPR) => void;
   isProcessingUrgent: boolean;
   isProcessingQuick: boolean;
+  maxDaysOpen: number;
   collaborators?: Collaborator[];
   onPRUpdated?: () => void;
 }
 
-export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick }: PRCardProps) {
+export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: PRCardProps) {
   // Local state for the PR to avoid reloading all PRs
   const [pr, setPr] = useState(initialPR);
 
@@ -33,43 +35,15 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
 
   // Si tiene assignee, la card siempre es verde, solo cambia el icono del reloj
   const hasAssignee = !pr.missingAssignee;
-
-  const getStatusIcon = () => {
-    if (hasAssignee) {
-      // Con assignee: GitPullRequest verde + reloj según estado
-      if (pr.status === 'overdue') {
-        return (
-          <>
-            <Clock className="w-6 h-6 text-red-600" />
-            <GitPullRequest className="w-6 h-6 text-green-600" />
-          </>
-        );
-      } else if (pr.status === 'warning') {
-        return (
-          <>
-            <Clock className="w-6 h-6 text-yellow-600" />
-            <GitPullRequest className="w-6 h-6 text-green-600" />
-          </>
-        );
-      } else {
-        return <GitPullRequest className="w-6 h-6 text-green-600" />;
-      }
-    } else {
-      // Sin assignee: siempre rojo
-      return (
-        <>
-          <Clock className="w-6 h-6 text-red-600" />
-          <GitPullRequest className="w-6 h-6 text-red-600" />
-        </>
-      );
-    }
-  };
+  const daysOpen = pr.hoursOpen / 24;
+  const isOverMaxDays = daysOpen > maxDaysOpen;
 
   const statusConfig = {
-    icon: getStatusIcon(),
+    icon: <GitPullRequest className={`w-6 h-6 ${hasAssignee ? 'text-green-600' : 'text-red-600'}`} />,
     borderColor: hasAssignee ? 'border-green-400' : 'border-red-400',
     borderLeftColor: hasAssignee ? 'border-l-green-400' : 'border-l-red-400',
     textColor: hasAssignee ? 'text-green-800' : 'text-red-800',
+    timeColor: isOverMaxDays ? 'text-red-600 font-bold' : 'text-green-600 font-bold',
   };
 
   const status = statusConfig;
@@ -82,8 +56,12 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               {status.icon}
-              {pr.isUrgent && <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />}
-              {pr.isQuick && <Zap className="w-6 h-6 text-yellow-500" fill="currentColor" />}
+              <h4 className="text-md font-semibold text-gray-700">
+              {pr.repo.name}
+              </h4>
+            </div>
+
+            <div className="flex items-center gap-2 mb-2 ml-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 <a
                   href={pr.html_url}
@@ -96,22 +74,31 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
               </h3>
             </div>
 
-            <div className="text-sm text-gray-600 mb-3">
-              <span className="font-bold text-base text-gray-800">
-                {pr.repo.name}
-              </span>
-              {' • '}
-              <span className={status.textColor}>
+            <div className="flex items-center text-sm text-gray-600 mb-3 gap-2 ml-4">
+              <span className={`inline-flex items-center gap-1 ${status.timeColor}`}>
+                <Clock className="w-4 h-4" />
                 {formatTimeAgo(pr.hoursOpen)} abierta
                 {!hasAssignee && ' (OVERDUE)'}
               </span>
-              {' • '}
+              <span>•</span>
               <span className="text-gray-500">por {pr.user.login}</span>
-              {' • '}
-              <span className="text-gray-700">
-                <MessageSquare className="w-4 h-4 inline mr-1" />
-                {pr.commentCount} comentarios
-              </span>
+              <span>•</span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 text-gray-700 cursor-help">
+                      <MessageSquare className="w-4 h-4" />
+                      {pr.commentCount} comentarios
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs">
+                      <div>💬 {pr.issueComments} comentarios generales</div>
+                      <div>📝 {pr.reviewComments} comentarios de código</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {pr.labels.length > 0 && (
@@ -134,7 +121,7 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
             )}
 
             {/* Action buttons row at bottom */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2 mt-4 ml-1">
               <Button
                 asChild
                 variant="link"

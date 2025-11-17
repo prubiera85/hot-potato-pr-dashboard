@@ -43,6 +43,8 @@ export interface EnhancedPR extends GitHubPullRequest {
   missingReviewer: boolean;
   reviewerCount: number;
   commentCount: number;
+  issueComments: number;
+  reviewComments: number;
   isUrgent: boolean;
   isQuick: boolean;
 
@@ -62,8 +64,9 @@ export interface Repository {
 export interface DashboardConfig {
   assignmentTimeLimit: number; // in hours
   warningThreshold: number; // percentage (e.g., 80)
+  maxDaysOpen: number; // max days a PR should be open (e.g., 5)
   repositories: Repository[];
 }
 
-export type SortOption = 'urgent-overdue' | 'time-open' | 'reviewers';
-export type FilterOption = 'all' | 'urgent' | 'overdue' | 'unassigned' | 'quick';
+export type SortOption = 'time-open-desc' | 'time-open-asc';
+export type FilterOption = 'all' | 'urgent' | 'unassigned' | 'quick';

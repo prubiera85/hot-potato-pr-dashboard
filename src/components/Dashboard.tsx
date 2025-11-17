@@ -4,6 +4,8 @@ import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
 import { Button } from './ui/button';
+import { Checkbox } from './ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface DashboardProps {
   prs: EnhancedPR[];
@@ -13,12 +15,13 @@ interface DashboardProps {
   onRefresh: () => void;
   isProcessingUrgent: (pr: EnhancedPR) => boolean;
   isProcessingQuick: (pr: EnhancedPR) => boolean;
+  maxDaysOpen: number;
 }
 
-export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick }: DashboardProps) {
-  const [sortBy, setSortBy] = useState<SortOption>('urgent-overdue');
-  const [selectedFilters, setSelectedFilters] = useState<Set<FilterOption>>(new Set());
-  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
+export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: DashboardProps) {
+  const [sortBy, setSortBy] = useState<SortOption>('time-open-desc');
+  const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned']));
+  const [activeRepos, setActiveRepos] = useState<Set<string>>(new Set());
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isRepoDropdownOpen, setIsRepoDropdownOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
@@ -92,9 +95,14 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
     }
   }, [uniqueRepos]);
 
+  // Initialize active repos when repositories change
+  useEffect(() => {
+    setActiveRepos(new Set(repositories));
+  }, [repositories]);
+
   // Toggle filter selection
   const toggleFilter = (filter: FilterOption) => {
-    setSelectedFilters((prev) => {
+    setActiveFilters((prev) => {
       const next = new Set(prev);
       if (next.has(filter)) {
         next.delete(filter);
@@ -105,19 +113,19 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
     });
   };
 
-  // Select all filters
-  const selectAllFilters = () => {
-    setSelectedFilters(new Set<FilterOption>(['urgent', 'overdue', 'quick', 'unassigned']));
-  };
-
-  // Clear filter selection
-  const clearFilterSelection = () => {
-    setSelectedFilters(new Set());
+  // Select/Deselect all filters
+  const toggleAllFilters = () => {
+    const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned'];
+    if (activeFilters.size === allFilters.length) {
+      setActiveFilters(new Set());
+    } else {
+      setActiveFilters(new Set(allFilters));
+    }
   };
 
   // Toggle repository selection
   const toggleRepo = (repo: string) => {
-    setSelectedRepos((prev) => {
+    setActiveRepos((prev) => {
       const next = new Set(prev);
       if (next.has(repo)) {
         next.delete(repo);
@@ -128,40 +136,46 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
     });
   };
 
-  // Select all repositories
-  const selectAllRepos = () => {
-    setSelectedRepos(new Set(repositories));
-  };
-
-  // Clear repository selection
-  const clearRepoSelection = () => {
-    setSelectedRepos(new Set());
+  // Select/Deselect all repositories
+  const toggleAllRepos = () => {
+    if (activeRepos.size === repositories.length) {
+      setActiveRepos(new Set());
+    } else {
+      setActiveRepos(new Set(repositories));
+    }
   };
 
   // Filter PRs
   const filteredPRs = useMemo(() => {
     let filtered = prs;
 
-    // Apply status filters (if any filters are selected)
-    if (selectedFilters.size > 0) {
+    // Apply status filters - show ONLY items that match ACTIVE filters
+    if (activeFilters.size > 0 && activeFilters.size < 3) {
       filtered = filtered.filter((pr) => {
-        if (selectedFilters.has('urgent') && pr.isUrgent) return true;
-        if (selectedFilters.has('overdue') && pr.status === 'overdue') return true;
-        if (selectedFilters.has('quick') && pr.isQuick) return true;
-        if (selectedFilters.has('unassigned') && (pr.missingAssignee || pr.missingReviewer)) return true;
+        if (activeFilters.has('urgent') && pr.isUrgent) return true;
+        if (activeFilters.has('quick') && pr.isQuick) return true;
+        if (activeFilters.has('unassigned') && (pr.missingAssignee || pr.missingReviewer)) return true;
         return false;
       });
+    } else if (activeFilters.size === 0) {
+      // No filters active, show nothing
+      filtered = [];
     }
+    // If activeFilters.size === 3, show all (no filtering)
 
-    // Apply repository filter (if any repos are selected)
-    if (selectedRepos.size > 0) {
+    // Apply repository filter - show ONLY repos that are ACTIVE
+    if (activeRepos.size > 0 && activeRepos.size < repositories.length) {
       filtered = filtered.filter((pr) =>
-        selectedRepos.has(`${pr.repo.owner}/${pr.repo.name}`)
+        activeRepos.has(`${pr.repo.owner}/${pr.repo.name}`)
       );
+    } else if (activeRepos.size === 0) {
+      // No repos active, show nothing
+      filtered = [];
     }
+    // If activeRepos.size === repositories.length, show all (no filtering)
 
     return filtered;
-  }, [prs, selectedFilters, selectedRepos]);
+  }, [prs, activeFilters, activeRepos, repositories.length]);
 
   // Sort PRs
   const sortedPRs = useMemo(() => {
@@ -173,7 +187,6 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
     return {
       total: prs.length,
       urgent: prs.filter((pr) => pr.isUrgent).length,
-      overdue: prs.filter((pr) => pr.status === 'overdue').length,
       unassigned: prs.filter((pr) => pr.missingAssignee || pr.missingReviewer).length,
       quick: prs.filter((pr) => pr.isQuick).length,
       missingAssignee: prs.filter((pr) => pr.missingAssignee).length,
@@ -184,7 +197,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-lg shadow p-4 border-2 border-gray-300">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-600">Total PRs</div>
@@ -196,10 +209,6 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
         <div className="bg-white rounded-lg shadow p-4 border-2 border-yellow-300">
           <div className="text-2xl font-bold text-yellow-600">{stats.quick}</div>
           <div className="text-sm text-yellow-500">Rápidas</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-red-300">
-          <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
-          <div className="text-sm text-red-500">Overdue</div>
         </div>
         <div className="bg-white rounded-lg shadow p-4 border-2 border-yellow-300">
           <div className="text-2xl font-bold text-yellow-700">{stats.unassigned}</div>
@@ -224,13 +233,16 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
             <div className="relative" ref={filterDropdownRef}>
               <Button
                 onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
-                variant="default"
+                variant="outline"
                 size="sm"
+                className="bg-white hover:bg-gray-50"
               >
                 <span>
-                  {selectedFilters.size === 0
+                  {activeFilters.size === 3
                     ? 'Todos'
-                    : `${selectedFilters.size} filtro${selectedFilters.size > 1 ? 's' : ''}`}
+                    : activeFilters.size === 0
+                    ? 'Ninguno'
+                    : `${activeFilters.size} filtro${activeFilters.size > 1 ? 's' : ''}`}
                 </span>
                 <ChevronDown />
               </Button>
@@ -239,59 +251,63 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[250px]">
                   <div className="p-2 border-b border-gray-200 bg-gray-50">
                     <Button
-                      onClick={selectedFilters.size === 0 ? selectAllFilters : clearFilterSelection}
-                      variant="default"
+                      onClick={toggleAllFilters}
+                      variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full bg-white hover:bg-gray-50"
                     >
-                      {selectedFilters.size === 0 ? 'Seleccionar todos' : 'Limpiar selección'}
+                      {activeFilters.size === 3 ? 'Deseleccionar todos' : 'Seleccionar todos'}
                     </Button>
                   </div>
                   <div className="p-2">
-                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.has('urgent')}
-                        onChange={() => toggleFilter('urgent')}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    <div
+                      className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFilter('urgent');
+                      }}
+                    >
+                      <Checkbox
+                        checked={activeFilters.has('urgent')}
+                        onClick={(e) => e.stopPropagation()}
+                        onCheckedChange={() => {}}
                       />
                       <span className="text-sm flex-1">
                         ⭐ Urgentes <span className="text-gray-500">({stats.urgent})</span>
                       </span>
-                    </label>
-                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.has('overdue')}
-                        onChange={() => toggleFilter('overdue')}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <span className="text-sm flex-1">
-                        🚨 Overdue <span className="text-gray-500">({stats.overdue})</span>
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.has('quick')}
-                        onChange={() => toggleFilter('quick')}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    </div>
+                    <div
+                      className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFilter('quick');
+                      }}
+                    >
+                      <Checkbox
+                        checked={activeFilters.has('quick')}
+                        onClick={(e) => e.stopPropagation()}
+                        onCheckedChange={() => {}}
                       />
                       <span className="text-sm flex-1">
                         ⚡ Rápidas <span className="text-gray-500">({stats.quick})</span>
                       </span>
-                    </label>
-                    <label className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.has('unassigned')}
-                        onChange={() => toggleFilter('unassigned')}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    </div>
+                    <div
+                      className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFilter('unassigned');
+                      }}
+                    >
+                      <Checkbox
+                        checked={activeFilters.has('unassigned')}
+                        onClick={(e) => e.stopPropagation()}
+                        onCheckedChange={() => {}}
                       />
                       <span className="text-sm flex-1">
                         Sin asignar <span className="text-gray-500">({stats.unassigned})</span>
                       </span>
-                    </label>
+                    </div>
                   </div>
                 </div>
               )}
@@ -305,14 +321,16 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
               <div className="relative" ref={repoDropdownRef}>
                 <Button
                   onClick={() => setIsRepoDropdownOpen(!isRepoDropdownOpen)}
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-white hover:bg-gray-50"
                 >
                   <span>
-                    {selectedRepos.size === 0
+                    {activeRepos.size === repositories.length
                       ? 'Todos'
-                      : `${selectedRepos.size} repo${selectedRepos.size > 1 ? 's' : ''}`}
+                      : activeRepos.size === 0
+                      ? 'Ninguno'
+                      : `${activeRepos.size} repo${activeRepos.size > 1 ? 's' : ''}`}
                   </span>
                   <ChevronDown />
                 </Button>
@@ -321,33 +339,35 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                   <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[300px] max-h-[400px] overflow-y-auto">
                     <div className="p-2 border-b border-gray-200 bg-gray-50">
                       <Button
-                        onClick={selectedRepos.size === 0 ? selectAllRepos : clearRepoSelection}
-                        variant="secondary"
+                        onClick={toggleAllRepos}
+                        variant="outline"
                         size="sm"
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                        className="w-full bg-white hover:bg-gray-50"
                       >
-                        {selectedRepos.size === 0 ? 'Seleccionar todos' : 'Limpiar selección'}
+                        {activeRepos.size === repositories.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
                       </Button>
                     </div>
                     <div className="p-2">
                       {repositories.map((repo) => {
-                        const isSelected = selectedRepos.has(repo);
                         const repoCount = prs.filter(pr => `${pr.repo.owner}/${pr.repo.name}` === repo).length;
                         return (
-                          <label
+                          <div
                             key={repo}
                             className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleRepo(repo);
+                            }}
                           >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleRepo(repo)}
-                              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                            <Checkbox
+                              checked={activeRepos.has(repo)}
+                              onClick={(e) => e.stopPropagation()}
+                              onCheckedChange={() => {}}
                             />
                             <span className="text-sm flex-1">
                               {repo} <span className="text-gray-500">({repoCount})</span>
                             </span>
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
@@ -360,15 +380,15 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
           {/* Sort */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700">Ordenar:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="urgent-overdue">Urgente + Overdue</option>
-              <option value="time-open">Tiempo abierta</option>
-              <option value="reviewers"># Reviewers</option>
-            </select>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+              <SelectTrigger className="w-[200px] h-8 text-xs font-medium bg-white hover:bg-gray-50">
+                <SelectValue placeholder="Seleccionar orden" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="time-open-desc">Tiempo (más a menos)</SelectItem>
+                <SelectItem value="time-open-asc">Tiempo (menos a más)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Refresh */}
@@ -394,7 +414,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
         ) : sortedPRs.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <div className="text-gray-600">
-              {selectedFilters.size === 0 && selectedRepos.size === 0
+              {activeFilters.size === 3 && activeRepos.size === repositories.length
                 ? 'No hay PRs abiertas'
                 : 'No hay PRs que coincidan con los filtros seleccionados'}
             </div>
@@ -412,6 +432,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                 onToggleQuick={onToggleQuick}
                 isProcessingUrgent={isProcessingUrgent(pr)}
                 isProcessingQuick={isProcessingQuick(pr)}
+                maxDaysOpen={maxDaysOpen}
                 collaborators={allCollaborators}
                 onPRUpdated={onRefresh}
               />

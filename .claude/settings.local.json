@@ -29,7 +29,9 @@
       "Bash(git checkout:*)",
       "Bash(npx shadcn@latest init:*)",
       "Bash(npx shadcn@latest add:*)",
-      "WebFetch(domain:www.shadcn.io)"
+      "WebFetch(domain:www.shadcn.io)",
+      "mcp__shadcn__getComponent",
+      "mcp__shadcn__getComponents"
     ],
     "deny": [],
     "ask": []

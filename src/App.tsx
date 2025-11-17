@@ -41,7 +41,7 @@ function AppContent() {
       }
       return response.json();
     },
-    refetchInterval: isTestMode ? false : 60000, // Don't refresh in test mode
+    refetchInterval: isTestMode ? false : 120000, // Don't refresh in test mode (2 minutes)
   });
 
   // Fetch config
@@ -181,10 +181,11 @@ function AppContent() {
   });
 
   const prs: EnhancedPR[] = prsData?.prs || [];
-  const config: DashboardConfig = configData || {
-    assignmentTimeLimit: 4,
-    warningThreshold: 80,
-    repositories: [],
+  const config: DashboardConfig = {
+    assignmentTimeLimit: configData?.assignmentTimeLimit || 4,
+    warningThreshold: configData?.warningThreshold || 80,
+    maxDaysOpen: configData?.maxDaysOpen || 5,
+    repositories: configData?.repositories || [],
   };
 
   const hasError = !isTestMode && prsData?.error;
@@ -226,9 +227,9 @@ function AppContent() {
             {/* Config Button */}
             <Button
               onClick={() => setIsConfigOpen(true)}
-              variant="ghost"
+              variant="secondary"
               size="icon"
-              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Settings className="w-5 h-5" />
             </Button>
@@ -280,6 +281,7 @@ function AppContent() {
             onRefresh={() => refetch()}
             isProcessingUrgent={(pr) => processingPRs.has(`${getPRKey(pr)}-urgent`)}
             isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
+            maxDaysOpen={config.maxDaysOpen}
           />
         )}
       </main>
@@ -287,7 +289,7 @@ function AppContent() {
       <footer className="max-w-7xl mx-auto py-6 px-4 text-center text-sm text-gray-500">
         <p>
           Hot Potato PR Dashboard v1.0
-          {!isTestMode && ' • Actualización automática cada minuto'}
+          {!isTestMode && ' • Actualización automática cada 2 minutos'}
         </p>
       </footer>
 
