@@ -98,7 +98,6 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
               <span className={`inline-flex items-center gap-1 ${status.timeColor}`}>
                 <Clock className="w-4 h-4" />
                 {formatTimeAgo(pr.hoursOpen)} abierta
-                {!hasAssignee && ' (OVERDUE)'}
               </span>
               <span>•</span>
               <span className="text-gray-500">por {pr.user.login}</span>
