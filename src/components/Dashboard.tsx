@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { RefreshCw, ChevronDown, Loader2 } from 'lucide-react';
+import { RefreshCw, ChevronDown, Loader2, GitPullRequest, Star, Zap, AlertCircle, User, Eye } from 'lucide-react';
 import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
@@ -197,30 +197,48 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-gray-300">
-          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-          <div className="text-sm text-gray-600">Total PRs</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="bg-white rounded-lg shadow p-3 border-2 border-gray-300">
+          <div className="flex items-center gap-2">
+            <GitPullRequest className="w-5 h-5 text-gray-600" />
+            <div className="text-xl font-bold text-gray-900">{stats.total}</div>
+          </div>
+          <div className="text-xs text-gray-600 mt-1">Total PRs</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-red-300">
-          <div className="text-2xl font-bold text-red-700">{stats.urgent}</div>
-          <div className="text-sm text-red-600">Urgentes</div>
+        <div className="bg-white rounded-lg shadow p-3 border-2 border-red-300">
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 text-red-600" />
+            <div className="text-xl font-bold text-red-700">{stats.urgent}</div>
+          </div>
+          <div className="text-xs text-red-600 mt-1">Urgentes</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-yellow-300">
-          <div className="text-2xl font-bold text-yellow-600">{stats.quick}</div>
-          <div className="text-sm text-yellow-500">Rápidas</div>
+        <div className="bg-white rounded-lg shadow p-3 border-2 border-yellow-300">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-yellow-600" />
+            <div className="text-xl font-bold text-yellow-600">{stats.quick}</div>
+          </div>
+          <div className="text-xs text-yellow-600 mt-1">Rápidas</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-yellow-300">
-          <div className="text-2xl font-bold text-yellow-700">{stats.unassigned}</div>
-          <div className="text-sm text-yellow-600">Sin asignar</div>
+        <div className="bg-white rounded-lg shadow p-3 border-2 border-yellow-300">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-yellow-700" />
+            <div className="text-xl font-bold text-yellow-700">{stats.unassigned}</div>
+          </div>
+          <div className="text-xs text-yellow-600 mt-1">Sin asignar</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-orange-300">
-          <div className="text-2xl font-bold text-orange-600">{stats.missingAssignee}</div>
-          <div className="text-sm text-orange-500">Sin assignee</div>
+        <div className="bg-white rounded-lg shadow p-3 border-2 border-orange-300">
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5 text-orange-600" />
+            <div className="text-xl font-bold text-orange-600">{stats.missingAssignee}</div>
+          </div>
+          <div className="text-xs text-orange-500 mt-1">Sin assignee</div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4 border-2 border-orange-300">
-          <div className="text-2xl font-bold text-orange-600">{stats.missingReviewer}</div>
-          <div className="text-sm text-orange-500">Sin reviewer</div>
+        <div className="bg-white rounded-lg shadow p-3 border-2 border-orange-300">
+          <div className="flex items-center gap-2">
+            <Eye className="w-5 h-5 text-orange-600" />
+            <div className="text-xl font-bold text-orange-600">{stats.missingReviewer}</div>
+          </div>
+          <div className="text-xs text-orange-500 mt-1">Sin reviewer</div>
         </div>
       </div>
 

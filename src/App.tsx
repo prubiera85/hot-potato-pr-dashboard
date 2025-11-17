@@ -112,23 +112,7 @@ function AppContent() {
       return response.json();
     },
     onSuccess: (_, pr) => {
-      // Update the PR data directly in the cache instead of refetching
-      queryClient.setQueryData(['prs', isTestMode], (oldData: any) => {
-        if (!oldData?.prs) return oldData;
-
-        return {
-          ...oldData,
-          prs: oldData.prs.map((p: EnhancedPR) => {
-            if (p.repo.owner === pr.repo.owner &&
-                p.repo.name === pr.repo.name &&
-                p.number === pr.number) {
-              return { ...p, isUrgent: !p.isUrgent };
-            }
-            return p;
-          })
-        };
-      });
-
+      queryClient.invalidateQueries({ queryKey: ['prs'] });
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -176,23 +160,7 @@ function AppContent() {
       return response.json();
     },
     onSuccess: (_, pr) => {
-      // Update the PR data directly in the cache instead of refetching
-      queryClient.setQueryData(['prs', isTestMode], (oldData: any) => {
-        if (!oldData?.prs) return oldData;
-
-        return {
-          ...oldData,
-          prs: oldData.prs.map((p: EnhancedPR) => {
-            if (p.repo.owner === pr.repo.owner &&
-                p.repo.name === pr.repo.name &&
-                p.number === pr.number) {
-              return { ...p, isQuick: !p.isQuick };
-            }
-            return p;
-          })
-        };
-      });
-
+      queryClient.invalidateQueries({ queryKey: ['prs'] });
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);

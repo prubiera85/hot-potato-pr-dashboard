@@ -15,10 +15,19 @@ export default {
   				'50%': {
   					transform: 'rotate(15deg)'
   				}
+  			},
+  			ring: {
+  				'0%, 100%': {
+  					transform: 'rotate(-10deg)'
+  				},
+  				'50%': {
+  					transform: 'rotate(10deg)'
+  				}
   			}
   		},
   		animation: {
-  			wiggle: 'wiggle 0.5s ease-in-out infinite'
+  			wiggle: 'wiggle 0.5s ease-in-out infinite',
+  			ring: 'ring 0.3s ease-in-out infinite'
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

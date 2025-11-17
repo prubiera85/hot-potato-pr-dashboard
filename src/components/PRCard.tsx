@@ -5,7 +5,6 @@ import { AvatarGroup, AvatarGroupTooltip } from '@/components/ui/shadcn-io/avata
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useState, useEffect } from 'react';
 
 interface Collaborator {
   id: number;
@@ -24,15 +23,7 @@ interface PRCardProps {
   onPRUpdated?: () => void;
 }
 
-export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: PRCardProps) {
-  // Local state for the PR to avoid reloading all PRs
-  const [pr, setPr] = useState(initialPR);
-
-  // Update local PR when prop changes
-  useEffect(() => {
-    setPr(initialPR);
-  }, [initialPR]);
-
+export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: PRCardProps) {
   // Calculate visual status
   const hasAssignee = !pr.missingAssignee;
   const daysOpen = pr.hoursOpen / 24;
@@ -41,7 +32,7 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
   // Determine border color based on assignee status only (reviewer doesn't affect)
   let borderColor = 'border-gray-400';
   let borderLeftColor = 'border-l-gray-400';
-  let iconColor = 'text-blue-600';
+  let iconColor = 'text-gray-600'; // Darker gray to match the border
 
   if (!hasAssignee) {
     // Missing assignee
@@ -63,7 +54,7 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
     borderColor,
     borderLeftColor,
     textColor: hasAssignee ? 'text-gray-800' : 'text-red-800',
-    timeColor: isOverMaxDays ? 'text-red-600 font-bold' : hasAssignee ? 'text-gray-600 font-bold' : 'text-green-600 font-bold',
+    timeColor: isOverMaxDays ? 'text-red-600 font-bold' : 'text-green-600 font-bold',
   };
 
   const status = statusConfig;
@@ -96,7 +87,7 @@ export function PRCard({ pr: initialPR, onToggleUrgent, onToggleQuick, isProcess
 
             <div className="flex items-center text-sm text-gray-600 mb-3 gap-2 ml-4">
               <span className={`inline-flex items-center gap-1 ${status.timeColor}`}>
-                <Clock className="w-4 h-4" />
+                <Clock className={`w-4 h-4 ${isOverMaxDays ? 'animate-ring' : ''}`} />
                 {formatTimeAgo(pr.hoursOpen)} abierta
               </span>
               <span>•</span>
