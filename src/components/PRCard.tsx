@@ -1,4 +1,4 @@
-import { Star, ExternalLink, Zap, Loader2, Clock, GitPullRequest, MessageSquare, User, Eye, AlertCircle } from 'lucide-react';
+import { Flame, ExternalLink, Zap, Loader2, Clock, GitPullRequest, MessageSquare, User, Eye, AlertCircle } from 'lucide-react';
 import type { EnhancedPR } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
 import { AvatarGroup, AvatarGroupTooltip } from '@/components/ui/shadcn-io/avatar-group';
@@ -254,7 +254,7 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                   <Loader2 className="animate-spin" />
                 ) : (
                   <>
-                    <Star fill={pr.isUrgent ? 'currentColor' : 'none'} />
+                    <Flame fill={pr.isUrgent ? 'currentColor' : 'none'} />
                     <span>Urgente</span>
                   </>
                 )}

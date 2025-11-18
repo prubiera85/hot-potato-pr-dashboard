@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { RefreshCw, ChevronDown, Loader2, GitPullRequest, Star, Zap, AlertCircle, User, Eye } from 'lucide-react';
+import { RefreshCw, ChevronDown, Loader2, GitPullRequest, Flame, Zap, AlertCircle, User, Eye } from 'lucide-react';
 import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
@@ -207,7 +207,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
         </div>
         <div className="bg-white rounded-lg shadow p-3 border-2 border-red-300">
           <div className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-red-600" />
+            <Flame className="w-5 h-5 text-red-600" />
             <div className="text-xl font-bold text-red-700">{stats.urgent}</div>
           </div>
           <div className="text-xs text-red-600 mt-1">Urgentes</div>
@@ -278,54 +278,39 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                     </Button>
                   </div>
                   <div className="p-2">
-                    <div
+                    <label
                       className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFilter('urgent');
-                      }}
                     >
                       <Checkbox
                         checked={activeFilters.has('urgent')}
-                        onClick={(e) => e.stopPropagation()}
-                        onCheckedChange={() => {}}
+                        onCheckedChange={() => toggleFilter('urgent')}
                       />
                       <span className="text-sm flex-1">
-                        ⭐ Urgentes <span className="text-gray-500">({stats.urgent})</span>
+                        🔥 Urgentes <span className="text-gray-500">({stats.urgent})</span>
                       </span>
-                    </div>
-                    <div
+                    </label>
+                    <label
                       className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFilter('quick');
-                      }}
                     >
                       <Checkbox
                         checked={activeFilters.has('quick')}
-                        onClick={(e) => e.stopPropagation()}
-                        onCheckedChange={() => {}}
+                        onCheckedChange={() => toggleFilter('quick')}
                       />
                       <span className="text-sm flex-1">
                         ⚡ Rápidas <span className="text-gray-500">({stats.quick})</span>
                       </span>
-                    </div>
-                    <div
+                    </label>
+                    <label
                       className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFilter('unassigned');
-                      }}
                     >
                       <Checkbox
                         checked={activeFilters.has('unassigned')}
-                        onClick={(e) => e.stopPropagation()}
-                        onCheckedChange={() => {}}
+                        onCheckedChange={() => toggleFilter('unassigned')}
                       />
                       <span className="text-sm flex-1">
                         Sin asignar <span className="text-gray-500">({stats.unassigned})</span>
                       </span>
-                    </div>
+                    </label>
                   </div>
                 </div>
               )}
@@ -369,23 +354,18 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                       {repositories.map((repo) => {
                         const repoCount = prs.filter(pr => `${pr.repo.owner}/${pr.repo.name}` === repo).length;
                         return (
-                          <div
+                          <label
                             key={repo}
                             className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleRepo(repo);
-                            }}
                           >
                             <Checkbox
                               checked={activeRepos.has(repo)}
-                              onClick={(e) => e.stopPropagation()}
-                              onCheckedChange={() => {}}
+                              onCheckedChange={() => toggleRepo(repo)}
                             />
                             <span className="text-sm flex-1">
                               {repo} <span className="text-gray-500">({repoCount})</span>
                             </span>
-                          </div>
+                          </label>
                         );
                       })}
                     </div>
