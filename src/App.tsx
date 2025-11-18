@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tanstack/react-query';
-import { Settings } from 'lucide-react';
+import { Settings, BookOpen, Clock } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { ConfigPanel } from './components/ConfigPanel';
 import { Button } from './components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs } from './utils/dummyData';
 
@@ -20,6 +21,7 @@ function AppContent() {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [processingPRs, setProcessingPRs] = useState<Set<string>>(new Set());
 
   // Fetch PRs and config
@@ -189,7 +191,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
+      <header className="shadow" style={{ backgroundColor: '#ffeb9e' }}>
         <div className="max-w-7xl mx-auto py-6 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
@@ -199,22 +201,51 @@ function AppContent() {
               onClick={() => setIsGifModalOpen(true)}
             />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Hot Potato PR Dashboard</h1>
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                <span className="text-red-600">Hot</span>Potato PR Dashboard
+              </h1>
               <p className="text-sm text-gray-600 mt-1">
                 PRs sin asignar son como patatas calientes - pásalas rápido!
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {/* Help Button */}
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setIsHelpModalOpen(true)}
+                    variant="secondary"
+                    size="icon"
+                    className="bg-amber-700 hover:bg-amber-800 text-white"
+                  >
+                    <BookOpen className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Leyenda de colores</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             {/* Config Button */}
-            <Button
-              onClick={() => setIsConfigOpen(true)}
-              variant="secondary"
-              size="icon"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setIsConfigOpen(true)}
+                    variant="secondary"
+                    size="icon"
+                    className="bg-amber-700 hover:bg-amber-800 text-white"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Configuración</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </header>
@@ -285,6 +316,85 @@ function AppContent() {
         isTestMode={isTestMode}
         onTestModeChange={setIsTestMode}
       />
+
+      {/* Help Modal */}
+      {isHelpModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setIsHelpModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Leyenda de Colores</h2>
+              <button
+                onClick={() => setIsHelpModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* PR Card Colors Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Estados de las PRs</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border-l-4 border-amber-700">
+                    <div className="flex-1">
+                      <div className="font-semibold text-amber-900">Marrón Patata</div>
+                      <div className="text-sm text-gray-600">PR con assignee asignado (estado normal)</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border-l-4 border-yellow-400">
+                    <div className="flex-1">
+                      <div className="font-semibold text-yellow-700">Amarillo</div>
+                      <div className="text-sm text-gray-600">PR sin assignee pero dentro del límite de tiempo de {config.assignmentTimeLimit} horas (warning)</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border-l-4 border-red-400">
+                    <div className="flex-1">
+                      <div className="font-semibold text-red-700">Rojo</div>
+                      <div className="text-sm text-gray-600">PR sin assignee Y pasado el límite de {config.maxDaysOpen} días abierta (crítico)</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Indicator Section */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Indicador de Tiempo</h3>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Clock className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-green-600">Verde</div>
+                      <div className="text-sm text-gray-600">La PR está dentro del límite de {config.maxDaysOpen} días permitidos</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Clock className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5 animate-ring" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-red-600">Rojo</div>
+                      <div className="text-sm text-gray-600">La PR ha excedido el límite de {config.maxDaysOpen} días permitidos</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600">
+                  <strong>Nota:</strong> El estado de reviewer no afecta los colores del borde. Solo el assignee determina el esquema de colores principal.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Burning Potato GIF Modal */}
       {isGifModalOpen && (

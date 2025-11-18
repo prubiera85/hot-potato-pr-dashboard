@@ -30,22 +30,25 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
   const isOverMaxDays = daysOpen > maxDaysOpen;
 
   // Determine border color based on assignee status only (reviewer doesn't affect)
-  let borderColor = 'border-gray-400';
-  let borderLeftColor = 'border-l-gray-400';
-  let iconColor = 'text-gray-600'; // Darker gray to match the border
+  let borderColor = 'border-amber-700';
+  let borderLeftColor = 'border-l-amber-700';
+  let iconColor = 'text-amber-800'; // Potato brown color to match the border
+  let textColor = 'text-amber-900';
 
   if (!hasAssignee) {
     // Missing assignee
-    if (pr.status === 'warning') {
-      // Over time limit - yellow warning
-      borderColor = 'border-yellow-400';
-      borderLeftColor = 'border-l-yellow-400';
-      iconColor = 'text-yellow-600';
-    } else {
-      // Within time limit but missing - red
+    if (isOverMaxDays) {
+      // No assignee AND over max days - RED (critical)
       borderColor = 'border-red-400';
       borderLeftColor = 'border-l-red-400';
       iconColor = 'text-red-600';
+      textColor = 'text-red-800';
+    } else {
+      // No assignee but within time limit - YELLOW (warning)
+      borderColor = 'border-yellow-400';
+      borderLeftColor = 'border-l-yellow-400';
+      iconColor = 'text-yellow-600';
+      textColor = 'text-yellow-800';
     }
   }
 
@@ -53,7 +56,7 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
     icon: <GitPullRequest className={`w-6 h-6 ${iconColor}`} />,
     borderColor,
     borderLeftColor,
-    textColor: hasAssignee ? 'text-gray-800' : 'text-red-800',
+    textColor,
     timeColor: isOverMaxDays ? 'text-red-600 font-bold' : 'text-green-600 font-bold',
   };
 
@@ -93,7 +96,7 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
               <span>•</span>
               <span className="text-gray-500">por {pr.user.login}</span>
               <span>•</span>
-              <TooltipProvider>
+              <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="inline-flex items-center gap-1 text-gray-700 cursor-help">
@@ -242,41 +245,59 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
 
             </div>
             {/* Botones de urgente y rápida Section */}
-            
-            <div className="flex gap-2"> <Button
-                onClick={() => onToggleUrgent(pr)}
-                disabled={isProcessingUrgent}
-                variant={pr.isUrgent ? "destructive" : "outline"}
-                size="sm"
-                title={pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}
-              >
-                {isProcessingUrgent ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <>
-                    <Flame fill={pr.isUrgent ? 'currentColor' : 'none'} />
-                    <span>Urgente</span>
-                  </>
-                )}
-              </Button>
 
-              <Button
-                onClick={() => onToggleQuick(pr)}
-                disabled={isProcessingQuick}
-                variant={pr.isQuick ? "default" : "outline"}
-                size="sm"
-                className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-                title={pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}
-              >
-                {isProcessingQuick ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <>
-                    <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />
-                    <span>Rápida</span>
-                  </>
-                )}
-              </Button></div>
+            <div className="flex gap-2">
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => onToggleUrgent(pr)}
+                      disabled={isProcessingUrgent}
+                      variant={pr.isUrgent ? "destructive" : "outline"}
+                      size="sm"
+                    >
+                      {isProcessingUrgent ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <>
+                          <Flame fill={pr.isUrgent ? 'currentColor' : 'none'} />
+                          <span>Urgente</span>
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => onToggleQuick(pr)}
+                      disabled={isProcessingQuick}
+                      variant={pr.isQuick ? "default" : "outline"}
+                      size="sm"
+                      className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                    >
+                      {isProcessingQuick ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <>
+                          <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />
+                          <span>Rápida</span>
+                        </>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
           
         </div>
