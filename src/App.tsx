@@ -246,7 +246,7 @@ function AppContent() {
                     onClick={() => setIsConfigOpen(true)}
                     variant="secondary"
                     size="icon"
-                    className="bg-amber-700 hover:bg-amber-800 text-white"
+                    className="bg-amber-700 hover:bg-amber-800 text-white config-button-hidden"
                   >
                     <Settings className="w-5 h-5" />
                   </Button>
