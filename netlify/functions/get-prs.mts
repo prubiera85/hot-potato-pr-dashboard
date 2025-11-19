@@ -51,9 +51,25 @@ export default async (req: Request, context: Context) => {
                 const hoursOpen = (Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60);
                 const reviewerCount = pr.requested_reviewers?.length || 0;
 
-                // Get both types of comments
-                const issueComments = pr.comments || 0; // General conversation comments
-                const reviewComments = pr.review_comments || 0; // Code review comments
+                // Get PR details which includes accurate comment counts
+                let issueComments = 0;
+                let reviewComments = 0;
+
+                try {
+                  const { data: prDetails } = await octokit.rest.pulls.get({
+                    owner: repo.owner,
+                    repo: repo.name,
+                    pull_number: pr.number,
+                  });
+                  issueComments = prDetails.comments || 0; // General conversation comments
+                  reviewComments = prDetails.review_comments || 0; // Code review comments
+                } catch (error) {
+                  console.error(`Error fetching PR details for #${pr.number}:`, error);
+                  // Fallback to list data
+                  issueComments = pr.comments || 0;
+                  reviewComments = pr.review_comments || 0;
+                }
+
                 const commentCount = issueComments + reviewComments;
                 const missingAssignee = !pr.assignees || pr.assignees.length === 0;
                 const missingReviewer = reviewerCount === 0;
