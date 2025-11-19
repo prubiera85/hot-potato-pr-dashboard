@@ -68,4 +68,4 @@ export interface DashboardConfig {
 }
 
 export type SortOption = 'time-open-desc' | 'time-open-asc';
-export type FilterOption = 'all' | 'urgent' | 'unassigned' | 'quick';
+export type FilterOption = 'all' | 'urgent' | 'unassigned' | 'quick' | 'missing-assignee' | 'missing-reviewer';

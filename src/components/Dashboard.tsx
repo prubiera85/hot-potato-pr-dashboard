@@ -21,7 +21,7 @@ interface DashboardProps {
 
 export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick, maxDaysOpen, configuredRepositories }: DashboardProps) {
   const [sortBy, setSortBy] = useState<SortOption>('time-open-asc');
-  const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned']));
+  const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer']));
   const [activeRepos, setActiveRepos] = useState<Set<string>>(new Set());
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isRepoDropdownOpen, setIsRepoDropdownOpen] = useState(false);
@@ -114,7 +114,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
 
   // Select/Deselect all filters
   const toggleAllFilters = () => {
-    const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned'];
+    const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer'];
     if (activeFilters.size === allFilters.length) {
       setActiveFilters(new Set());
     } else {
@@ -144,23 +144,37 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
     }
   };
 
+  // Handle stat card clicks to filter PRs
+  const handleStatClick = (filter: FilterOption | 'all') => {
+    if (filter === 'all') {
+      // Total PRs - select all filters
+      const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer'];
+      setActiveFilters(new Set(allFilters));
+    } else {
+      // Select only this filter (exclusive)
+      setActiveFilters(new Set([filter]));
+    }
+  };
+
   // Filter PRs
   const filteredPRs = useMemo(() => {
     let filtered = prs;
 
     // Apply status filters - show ONLY items that match ACTIVE filters
-    if (activeFilters.size > 0 && activeFilters.size < 3) {
+    if (activeFilters.size > 0 && activeFilters.size < 5) {
       filtered = filtered.filter((pr) => {
         if (activeFilters.has('urgent') && pr.isUrgent) return true;
         if (activeFilters.has('quick') && pr.isQuick) return true;
         if (activeFilters.has('unassigned') && (pr.missingAssignee || pr.missingReviewer)) return true;
+        if (activeFilters.has('missing-assignee') && pr.missingAssignee) return true;
+        if (activeFilters.has('missing-reviewer') && pr.missingReviewer) return true;
         return false;
       });
     } else if (activeFilters.size === 0) {
       // No filters active, show nothing
       filtered = [];
     }
-    // If activeFilters.size === 3, show all (no filtering)
+    // If activeFilters.size === 5, show all (no filtering)
 
     // Apply repository filter - show ONLY repos that are ACTIVE
     if (activeRepos.size > 0 && activeRepos.size < repositories.length) {
@@ -197,48 +211,90 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white rounded-lg shadow p-3 border-2 border-amber-700">
+        <button
+          onClick={() => handleStatClick('all')}
+          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+            activeFilters.size === 5
+              ? 'bg-amber-50 border-amber-700'
+              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <GitPullRequest className="w-5 h-5 text-amber-800" />
-            <div className="text-xl font-bold text-amber-900">{stats.total}</div>
+            <GitPullRequest className={`w-5 h-5 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`} />
+            <div className={`text-xl font-bold ${activeFilters.size === 5 ? 'text-amber-900' : 'text-gray-600'}`}>{stats.total}</div>
           </div>
-          <div className="text-xs text-amber-800 mt-1">Total PRs</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 border-2 border-red-500">
+          <div className={`text-xs mt-1 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`}>Total PRs</div>
+        </button>
+        <button
+          onClick={() => handleStatClick('urgent')}
+          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+            activeFilters.has('urgent')
+              ? 'bg-red-50 border-red-500'
+              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5 text-red-600" />
-            <div className="text-xl font-bold text-red-700">{stats.urgent}</div>
+            <Flame className={`w-5 h-5 ${activeFilters.has('urgent') ? 'text-red-600' : 'text-gray-500'}`} />
+            <div className={`text-xl font-bold ${activeFilters.has('urgent') ? 'text-red-700' : 'text-gray-600'}`}>{stats.urgent}</div>
           </div>
-          <div className="text-xs text-red-600 mt-1">Urgentes</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 border-2 border-yellow-400">
+          <div className={`text-xs mt-1 ${activeFilters.has('urgent') ? 'text-red-600' : 'text-gray-500'}`}>Urgentes</div>
+        </button>
+        <button
+          onClick={() => handleStatClick('quick')}
+          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+            activeFilters.has('quick')
+              ? 'bg-yellow-50 border-yellow-400'
+              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-yellow-600" />
-            <div className="text-xl font-bold text-yellow-700">{stats.quick}</div>
+            <Zap className={`w-5 h-5 ${activeFilters.has('quick') ? 'text-yellow-600' : 'text-gray-500'}`} />
+            <div className={`text-xl font-bold ${activeFilters.has('quick') ? 'text-yellow-700' : 'text-gray-600'}`}>{stats.quick}</div>
           </div>
-          <div className="text-xs text-yellow-700 mt-1">Rápidas</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 border-2 border-orange-500">
+          <div className={`text-xs mt-1 ${activeFilters.has('quick') ? 'text-yellow-700' : 'text-gray-500'}`}>Rápidas</div>
+        </button>
+        <button
+          onClick={() => handleStatClick('missing-assignee')}
+          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+            activeFilters.has('missing-assignee')
+              ? 'bg-orange-50 border-orange-500'
+              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-orange-700" />
-            <div className="text-xl font-bold text-orange-800">{stats.missingAssignee}</div>
+            <User className={`w-5 h-5 ${activeFilters.has('missing-assignee') ? 'text-orange-700' : 'text-gray-500'}`} />
+            <div className={`text-xl font-bold ${activeFilters.has('missing-assignee') ? 'text-orange-800' : 'text-gray-600'}`}>{stats.missingAssignee}</div>
           </div>
-          <div className="text-xs text-orange-700 mt-1">Sin assignee</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 border-2 border-orange-400">
+          <div className={`text-xs mt-1 ${activeFilters.has('missing-assignee') ? 'text-orange-700' : 'text-gray-500'}`}>Sin assignee</div>
+        </button>
+        <button
+          onClick={() => handleStatClick('missing-reviewer')}
+          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+            activeFilters.has('missing-reviewer')
+              ? 'bg-orange-50 border-orange-400'
+              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-orange-600" />
-            <div className="text-xl font-bold text-orange-700">{stats.missingReviewer}</div>
+            <Eye className={`w-5 h-5 ${activeFilters.has('missing-reviewer') ? 'text-orange-600' : 'text-gray-500'}`} />
+            <div className={`text-xl font-bold ${activeFilters.has('missing-reviewer') ? 'text-orange-700' : 'text-gray-600'}`}>{stats.missingReviewer}</div>
           </div>
-          <div className="text-xs text-orange-600 mt-1">Sin reviewer</div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 border-2 border-orange-300">
+          <div className={`text-xs mt-1 ${activeFilters.has('missing-reviewer') ? 'text-orange-600' : 'text-gray-500'}`}>Sin reviewer</div>
+        </button>
+        <button
+          onClick={() => handleStatClick('unassigned')}
+          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+            activeFilters.has('unassigned')
+              ? 'bg-orange-50 border-orange-300'
+              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+          }`}
+        >
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-orange-500" />
-            <div className="text-xl font-bold text-orange-600">{stats.unassigned}</div>
+            <AlertCircle className={`w-5 h-5 ${activeFilters.has('unassigned') ? 'text-orange-500' : 'text-gray-500'}`} />
+            <div className={`text-xl font-bold ${activeFilters.has('unassigned') ? 'text-orange-600' : 'text-gray-600'}`}>{stats.unassigned}</div>
           </div>
-          <div className="text-xs text-orange-500 mt-1">Sin asignar</div>
-        </div>
+          <div className={`text-xs mt-1 ${activeFilters.has('unassigned') ? 'text-orange-500' : 'text-gray-500'}`}>Sin asignar</div>
+        </button>
       </div>
 
       {/* Controls */}
@@ -255,7 +311,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                 className="bg-white hover:bg-gray-50"
               >
                 <span>
-                  {activeFilters.size === 3
+                  {activeFilters.size === 5
                     ? 'Todos'
                     : activeFilters.size === 0
                     ? 'Ninguno'
@@ -273,7 +329,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                       size="sm"
                       className="w-full bg-white hover:bg-gray-50"
                     >
-                      {activeFilters.size === 3 ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                      {activeFilters.size === 5 ? 'Deseleccionar todos' : 'Seleccionar todos'}
                     </Button>
                   </div>
                   <div className="p-2">
@@ -308,6 +364,28 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                       />
                       <span className="text-sm flex-1">
                         Sin asignar <span className="text-gray-500">({stats.unassigned})</span>
+                      </span>
+                    </label>
+                    <label
+                      className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={activeFilters.has('missing-assignee')}
+                        onCheckedChange={() => toggleFilter('missing-assignee')}
+                      />
+                      <span className="text-sm flex-1">
+                        Sin assignee <span className="text-gray-500">({stats.missingAssignee})</span>
+                      </span>
+                    </label>
+                    <label
+                      className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={activeFilters.has('missing-reviewer')}
+                        onCheckedChange={() => toggleFilter('missing-reviewer')}
+                      />
+                      <span className="text-sm flex-1">
+                        Sin reviewer <span className="text-gray-500">({stats.missingReviewer})</span>
                       </span>
                     </label>
                   </div>
@@ -413,10 +491,17 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
           </div>
         ) : sortedPRs.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
-            <div className="text-gray-600">
-              {activeFilters.size === 3 && activeRepos.size === repositories.length
-                ? 'No hay PRs abiertas'
-                : 'No hay PRs que coincidan con los filtros seleccionados'}
+            <div className="flex flex-col items-center gap-4">
+              <img
+                src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaW5vMzdsNGxyMHF1M3RlNTY1Mjl0ZGM0dDh3NHZnN2E4djdyYXRnaiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5x89XRx3sBZFC/giphy.gif"
+                alt="Tumbleweed rolling in desert"
+                className="w-80 h-auto rounded-lg"
+              />
+              <div className="text-gray-600 text-lg">
+                {activeFilters.size === 5 && activeRepos.size === repositories.length
+                  ? 'No hay PRs abiertas... 🌵'
+                  : 'No hay PRs que coincidan con los filtros seleccionados'}
+              </div>
             </div>
           </div>
         ) : (
