@@ -11,13 +11,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changelog to track all changes
 - Version display in footer from package.json
 - Colorful console log with potato emoji showing version on app load
+- Two new filter options: "Sin assignee" and "Sin reviewer" (5 filters total)
+- Clickable stats cards that act as quick filters
+- Animated tumbleweed GIF for empty state (no PRs)
+- Visual indicators for active/inactive filters (color vs grayscale with opacity)
+- Repository selector now shows all configured repos (even with 0 PRs)
 
 ### Changed
 - Auto-refresh interval increased from 2 to 5 minutes
+- Stats cards now function as exclusive filter buttons (click = only that filter active)
+- Filter behavior: clicking a stat card activates only that filter
+- All filters active by default (shows all PRs)
+- Inactive cards display with gray background and 60% opacity
+- Active cards show colored background and border
+- Comment display logic to use pulls.get() for accurate counts
 
 ### Fixed
 - Comment counts now display correctly (general comments + code review comments)
 - Performance improvement by using pulls.get() for accurate comment data
+- Repository selector now shows repos even when they have 0 PRs
+
+### Security
+- Configuration button temporarily hidden (CSS only)
+- "Mark as Urgent" button temporarily hidden (CSS only)
+- "Mark as Quick" button temporarily hidden (CSS only)
+- All functionality intact, awaiting authentication implementation
 
 ## [1.0.0] - 2024-11-17
 
