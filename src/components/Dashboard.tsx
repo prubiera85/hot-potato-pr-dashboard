@@ -16,9 +16,10 @@ interface DashboardProps {
   isProcessingUrgent: (pr: EnhancedPR) => boolean;
   isProcessingQuick: (pr: EnhancedPR) => boolean;
   maxDaysOpen: number;
+  configuredRepositories: Array<{ owner: string; name: string; enabled: boolean }>;
 }
 
-export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: DashboardProps) {
+export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick, maxDaysOpen, configuredRepositories }: DashboardProps) {
   const [sortBy, setSortBy] = useState<SortOption>('time-open-asc');
   const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned']));
   const [activeRepos, setActiveRepos] = useState<Set<string>>(new Set());
@@ -42,14 +43,12 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Get unique repositories
+  // Get all configured repositories (enabled or not)
   const repositories = useMemo(() => {
-    const repoSet = new Set<string>();
-    prs.forEach((pr) => {
-      repoSet.add(`${pr.repo.owner}/${pr.repo.name}`);
-    });
-    return Array.from(repoSet).sort();
-  }, [prs]);
+    return configuredRepositories
+      .map((repo) => `${repo.owner}/${repo.name}`)
+      .sort();
+  }, [configuredRepositories]);
 
   // Get unique repos for fetching collaborators
   const uniqueRepos = useMemo(() => {

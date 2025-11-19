@@ -1,5 +1,10 @@
 import type { EnhancedPR } from '../types/github';
 
+export const dummyRepositories = [
+  { owner: 'acme-corp', name: 'backend-api', enabled: true },
+  { owner: 'acme-corp', name: 'frontend-app', enabled: true },
+];
+
 export const dummyPRs: EnhancedPR[] = [
   {
     id: 1,

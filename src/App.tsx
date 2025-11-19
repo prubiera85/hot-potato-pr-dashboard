@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tanstack/react-query';
 import { Settings, BookOpen, Clock } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
@@ -6,7 +6,8 @@ import { ConfigPanel } from './components/ConfigPanel';
 import { Button } from './components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
 import type { DashboardConfig, EnhancedPR } from './types/github';
-import { dummyPRs } from './utils/dummyData';
+import { dummyPRs, dummyRepositories } from './utils/dummyData';
+import packageJson from '../package.json';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,15 @@ function AppContent() {
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [processingPRs, setProcessingPRs] = useState<Set<string>>(new Set());
+
+  // Show version in console on load
+  useEffect(() => {
+    console.log(
+      `%c🥔 Hot Potato PR Dashboard v${packageJson.version} %c`,
+      'background: #ffeb9e; color: #d97706; font-size: 16px; font-weight: bold; padding: 10px 20px; border-radius: 5px;',
+      ''
+    );
+  }, []);
 
   // Fetch PRs and config
   const {
@@ -184,7 +194,7 @@ function AppContent() {
   const config: DashboardConfig = {
     assignmentTimeLimit: configData?.assignmentTimeLimit || 4,
     maxDaysOpen: configData?.maxDaysOpen || 5,
-    repositories: configData?.repositories || [],
+    repositories: isTestMode ? dummyRepositories : (configData?.repositories || []),
   };
 
   const hasError = !isTestMode && prsData?.error;
@@ -295,13 +305,14 @@ function AppContent() {
             isProcessingUrgent={(pr) => processingPRs.has(`${getPRKey(pr)}-urgent`)}
             isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
             maxDaysOpen={config.maxDaysOpen}
+            configuredRepositories={config.repositories}
           />
         )}
       </main>
 
       <footer className="max-w-7xl mx-auto py-6 px-4 text-center text-sm text-gray-500">
         <p>
-          Hot Potato PR Dashboard v1.0
+          Hot Potato PR Dashboard v{packageJson.version}
           {!isTestMode && ' • Actualización automática cada 5 minutos'}
         </p>
       </footer>

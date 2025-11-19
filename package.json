@@ -1,6 +1,6 @@
 {
   "name": "hot-potato-pr-dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Hot Potato PR Dashboard - Monitor pull requests that need attention",
   "type": "module",
   "scripts": {
