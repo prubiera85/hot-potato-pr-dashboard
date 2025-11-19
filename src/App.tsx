@@ -43,7 +43,7 @@ function AppContent() {
       }
       return response.json();
     },
-    refetchInterval: isTestMode ? false : 120000, // Don't refresh in test mode (2 minutes)
+    refetchInterval: isTestMode ? false : 300000, // Don't refresh in test mode (5 minutes)
   });
 
   // Fetch config
@@ -302,7 +302,7 @@ function AppContent() {
       <footer className="max-w-7xl mx-auto py-6 px-4 text-center text-sm text-gray-500">
         <p>
           Hot Potato PR Dashboard v1.0
-          {!isTestMode && ' • Actualización automática cada 2 minutos'}
+          {!isTestMode && ' • Actualización automática cada 5 minutos'}
         </p>
       </footer>
 

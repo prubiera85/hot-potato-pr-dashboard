@@ -53,19 +53,7 @@ export default async (req: Request, context: Context) => {
 
                 // Get both types of comments
                 const issueComments = pr.comments || 0; // General conversation comments
-                let reviewComments = 0;
-                try {
-                  const { data: reviews } = await octokit.rest.pulls.listReviewComments({
-                    owner: repo.owner,
-                    repo: repo.name,
-                    pull_number: pr.number,
-                    per_page: 100,
-                  });
-                  reviewComments = reviews.length;
-                } catch (error) {
-                  console.error(`Error fetching review comments for PR #${pr.number}:`, error);
-                }
-
+                const reviewComments = pr.review_comments || 0; // Code review comments
                 const commentCount = issueComments + reviewComments;
                 const missingAssignee = !pr.assignees || pr.assignees.length === 0;
                 const missingReviewer = reviewerCount === 0;
