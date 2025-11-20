@@ -66,9 +66,15 @@ export default async (req: Request, context: Context) => {
                   });
                   issueComments = prDetails.comments || 0; // General conversation comments
                   reviewComments = prDetails.review_comments || 0; // Code review comments
-                  // Use the fresh data from the detailed call
-                  assignees = prDetails.assignees || [];
-                  requested_reviewers = prDetails.requested_reviewers || [];
+
+                  // Helper function to check if a user is a bot
+                  const isBot = (user: any) => {
+                    return user.type === "Bot" || user.login.toLowerCase().includes("[bot]");
+                  };
+
+                  // Use the fresh data from the detailed call, filtering out bots
+                  assignees = (prDetails.assignees || []).filter(user => !isBot(user));
+                  requested_reviewers = (prDetails.requested_reviewers || []).filter(user => !isBot(user));
                   requested_teams = prDetails.requested_teams || [];
 
                   // Get reviews to include reviewers who already reviewed
@@ -82,14 +88,14 @@ export default async (req: Request, context: Context) => {
                     // Combine all reviewers: requested + those who already reviewed
                     const reviewersMap = new Map();
 
-                    // Add requested reviewers
+                    // Add requested reviewers (already filtered)
                     requested_reviewers.forEach(reviewer => {
                       reviewersMap.set(reviewer.id, reviewer);
                     });
 
-                    // Add reviewers who have already submitted reviews
+                    // Add reviewers who have already submitted reviews (filter bots)
                     reviews.forEach(review => {
-                      if (review.user && review.user.id) {
+                      if (review.user && review.user.id && !isBot(review.user)) {
                         reviewersMap.set(review.user.id, review.user);
                       }
                     });
@@ -97,15 +103,18 @@ export default async (req: Request, context: Context) => {
                     allReviewers = Array.from(reviewersMap.values());
                   } catch (reviewError) {
                     console.error(`Error fetching reviews for PR #${pr.number}:`, reviewError);
-                    // Fallback to just requested reviewers
+                    // Fallback to just requested reviewers (already filtered)
                     allReviewers = requested_reviewers;
                   }
                 } catch (error) {
                   console.error(`Error fetching PR details for #${pr.number}:`, error);
-                  // Fallback to list data
+                  // Fallback to list data, filtering bots
                   issueComments = pr.comments || 0;
                   reviewComments = pr.review_comments || 0;
-                  allReviewers = requested_reviewers;
+                  const isBot = (user: any) => {
+                    return user.type === "Bot" || user.login.toLowerCase().includes("[bot]");
+                  };
+                  allReviewers = (requested_reviewers || []).filter(user => !isBot(user));
                 }
 
                 const commentCount = issueComments + reviewComments;
