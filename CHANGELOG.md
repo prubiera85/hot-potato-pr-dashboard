@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Assignees and reviewers now update correctly from GitHub API
 - PR details endpoint data now properly overrides initial list data for assignees/reviewers
+- Reviewers now include all users: requested reviewers + those who already completed reviews
+- Team reviewers are now displayed correctly below individual reviewer avatars
+- Reviewer count now includes both individual reviewers and team reviewers
 
 ## [1.1.0] - 2025-01-19
 
