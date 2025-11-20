@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- PR authors are now correctly excluded from the reviewers list when they submit reviews on their own PRs
+
 ## [1.1.1] - 2025-01-20
 
 ### Fixed
