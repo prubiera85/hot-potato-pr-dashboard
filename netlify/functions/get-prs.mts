@@ -93,9 +93,9 @@ export default async (req: Request, context: Context) => {
                       reviewersMap.set(reviewer.id, reviewer);
                     });
 
-                    // Add reviewers who have already submitted reviews (filter bots)
+                    // Add reviewers who have already submitted reviews (filter bots and PR author)
                     reviews.forEach(review => {
-                      if (review.user && review.user.id && !isBot(review.user)) {
+                      if (review.user && review.user.id && !isBot(review.user) && review.user.id !== pr.user.id) {
                         reviewersMap.set(review.user.id, review.user);
                       }
                     });
