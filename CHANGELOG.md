@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reviewers now include all users: requested reviewers + those who already completed reviews
 - Team reviewers are now displayed correctly below individual reviewer avatars
 - Reviewer count now includes both individual reviewers and team reviewers
+- Bot users (type "Bot" or with "[bot]" in username) are now excluded from assignees and reviewers lists
 
 ## [1.1.0] - 2025-01-19
 
