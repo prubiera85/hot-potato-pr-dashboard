@@ -6,11 +6,14 @@ Monitor de Pull Requests de GitHub con alertas de asignación y gestión de urge
 
 - 📊 **Dashboard en tiempo real**: Visualiza todas las PRs abiertas de múltiples repositorios
 - ⏱️ **Sistema SLA configurable**: Define tiempo límite para asignación de assignee y reviewer
-- 🚨 **Alertas visuales**: Estados OK, Warning y Overdue según tiempo transcurrido
-- ⭐ **Marcado de urgentes**: Marca PRs como urgentes usando labels de GitHub
-- 🔍 **Filtros avanzados**: Filtra por urgentes, overdue, sin asignar
-- 📈 **Ordenamiento inteligente**: Ordena por urgencia, tiempo abierto, o número de reviewers
-- 🔄 **Auto-refresh**: Actualización automática cada minuto
+- 🚨 **Alertas visuales**: Estados OK, Warning y Crítico según tiempo transcurrido
+- ⭐ **Marcado de urgentes y rápidas**: Marca PRs con labels de GitHub (🔥 urgent, ⚡ quick)
+- 🔍 **Filtros avanzados**: Filtra por urgentes, rápidas, sin assignee, sin reviewer, sin asignar
+- 📊 **Stats cards clickeables**: Métricas que funcionan como filtros rápidos
+- 👥 **Soporte completo de reviewers**: Muestra usuarios individuales, equipos y reviews completadas
+- 🤖 **Exclusión automática de bots**: Filtra bots de assignees y reviewers
+- 💬 **Desglose de comentarios**: Muestra comentarios generales y de código por separado
+- 🔄 **Auto-refresh**: Actualización automática cada 5 minutos
 - ⚙️ **Configuración flexible**: Panel para gestionar repos y parámetros SLA
 
 ## Stack Tecnológico
