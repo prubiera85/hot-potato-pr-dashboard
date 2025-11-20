@@ -49,11 +49,12 @@ export default async (req: Request, context: Context) => {
             const enhancedPRs = await Promise.all(
               pulls.map(async (pr) => {
                 const hoursOpen = (Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60);
-                const reviewerCount = pr.requested_reviewers?.length || 0;
 
-                // Get PR details which includes accurate comment counts
+                // Get PR details which includes accurate comment counts and updated assignees/reviewers
                 let issueComments = 0;
                 let reviewComments = 0;
+                let assignees = pr.assignees || [];
+                let requested_reviewers = pr.requested_reviewers || [];
 
                 try {
                   const { data: prDetails } = await octokit.rest.pulls.get({
@@ -63,6 +64,9 @@ export default async (req: Request, context: Context) => {
                   });
                   issueComments = prDetails.comments || 0; // General conversation comments
                   reviewComments = prDetails.review_comments || 0; // Code review comments
+                  // Use the fresh data from the detailed call
+                  assignees = prDetails.assignees || [];
+                  requested_reviewers = prDetails.requested_reviewers || [];
                 } catch (error) {
                   console.error(`Error fetching PR details for #${pr.number}:`, error);
                   // Fallback to list data
@@ -71,14 +75,15 @@ export default async (req: Request, context: Context) => {
                 }
 
                 const commentCount = issueComments + reviewComments;
-                const missingAssignee = !pr.assignees || pr.assignees.length === 0;
+                const reviewerCount = requested_reviewers.length;
+                const missingAssignee = assignees.length === 0;
                 const missingReviewer = reviewerCount === 0;
                 const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
                 const isQuick = pr.labels?.some((label) => label.name.toLowerCase() === "quick") || false;
 
                 // Calculate status
                 let status: "ok" | "warning" | "overdue" = "ok";
-                const hasAssignee = pr.assignees && pr.assignees.length > 0;
+                const hasAssignee = assignees.length > 0;
 
                 // If has assignee, status is always OK
                 if (hasAssignee) {
@@ -90,6 +95,8 @@ export default async (req: Request, context: Context) => {
 
                 return {
                   ...pr,
+                  assignees, // Explicitly set assignees from detailed PR data
+                  requested_reviewers, // Explicitly set reviewers from detailed PR data
                   status,
                   hoursOpen,
                   missingAssignee,
