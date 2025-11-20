@@ -55,6 +55,8 @@ export default async (req: Request, context: Context) => {
                 let reviewComments = 0;
                 let assignees = pr.assignees || [];
                 let requested_reviewers = pr.requested_reviewers || [];
+                let requested_teams = pr.requested_teams || [];
+                let allReviewers: any[] = [];
 
                 try {
                   const { data: prDetails } = await octokit.rest.pulls.get({
@@ -67,15 +69,47 @@ export default async (req: Request, context: Context) => {
                   // Use the fresh data from the detailed call
                   assignees = prDetails.assignees || [];
                   requested_reviewers = prDetails.requested_reviewers || [];
+                  requested_teams = prDetails.requested_teams || [];
+
+                  // Get reviews to include reviewers who already reviewed
+                  try {
+                    const { data: reviews } = await octokit.rest.pulls.listReviews({
+                      owner: repo.owner,
+                      repo: repo.name,
+                      pull_number: pr.number,
+                    });
+
+                    // Combine all reviewers: requested + those who already reviewed
+                    const reviewersMap = new Map();
+
+                    // Add requested reviewers
+                    requested_reviewers.forEach(reviewer => {
+                      reviewersMap.set(reviewer.id, reviewer);
+                    });
+
+                    // Add reviewers who have already submitted reviews
+                    reviews.forEach(review => {
+                      if (review.user && review.user.id) {
+                        reviewersMap.set(review.user.id, review.user);
+                      }
+                    });
+
+                    allReviewers = Array.from(reviewersMap.values());
+                  } catch (reviewError) {
+                    console.error(`Error fetching reviews for PR #${pr.number}:`, reviewError);
+                    // Fallback to just requested reviewers
+                    allReviewers = requested_reviewers;
+                  }
                 } catch (error) {
                   console.error(`Error fetching PR details for #${pr.number}:`, error);
                   // Fallback to list data
                   issueComments = pr.comments || 0;
                   reviewComments = pr.review_comments || 0;
+                  allReviewers = requested_reviewers;
                 }
 
                 const commentCount = issueComments + reviewComments;
-                const reviewerCount = requested_reviewers.length;
+                const reviewerCount = allReviewers.length + requested_teams.length;
                 const missingAssignee = assignees.length === 0;
                 const missingReviewer = reviewerCount === 0;
                 const isUrgent = pr.labels?.some((label) => label.name.toLowerCase() === "urgent") || false;
@@ -96,7 +130,8 @@ export default async (req: Request, context: Context) => {
                 return {
                   ...pr,
                   assignees, // Explicitly set assignees from detailed PR data
-                  requested_reviewers, // Explicitly set reviewers from detailed PR data
+                  requested_reviewers: allReviewers, // All reviewers (requested + already reviewed)
+                  requested_teams, // Teams requested for review
                   status,
                   hoursOpen,
                   missingAssignee,

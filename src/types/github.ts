@@ -5,6 +5,12 @@ export interface GitHubUser {
   html_url: string;
 }
 
+export interface GitHubTeam {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 export interface GitHubLabel {
   id: number;
   name: string;
@@ -23,6 +29,7 @@ export interface GitHubPullRequest {
   user: GitHubUser;
   assignees: GitHubUser[];
   requested_reviewers: GitHubUser[];
+  requested_teams?: GitHubTeam[];
   labels: GitHubLabel[];
   draft: boolean;
   head: {

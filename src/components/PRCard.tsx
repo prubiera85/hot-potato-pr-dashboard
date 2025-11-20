@@ -206,23 +206,35 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                   <Eye className="w-4 h-4 text-gray-600" />
                   <h4 className="text-sm font-semibold text-gray-700">Reviewers</h4>
                 </div>
-                {pr.requested_reviewers.length === 0 ? (
+                {pr.requested_reviewers.length === 0 && (!pr.requested_teams || pr.requested_teams.length === 0) ? (
                   <div className="flex items-center gap-1 text-sm text-red-400 font-medium">
                     <AlertCircle className="w-4 h-4" />
                     <span>Sin reviewers</span>
                   </div>
-                ) : ( 
-                <AvatarGroup variant="motion" className="h-8 -space-x-2">
-                  {pr.requested_reviewers.map((reviewer) => (
-                    <Avatar key={reviewer.id} className="h-8 w-8 border-2 border-white">
-                      <AvatarImage src={reviewer.avatar_url} alt={reviewer.login} />
-                      <AvatarFallback>{reviewer.login.slice(0, 2).toUpperCase()}</AvatarFallback>
-                      <AvatarGroupTooltip>
-                        <p>@{reviewer.login}</p>
-                      </AvatarGroupTooltip>
-                    </Avatar>
-                  ))}
-                </AvatarGroup>
+                ) : (
+                <div className="flex flex-col items-end gap-1">
+                  <AvatarGroup variant="motion" className="h-8 -space-x-2">
+                    {pr.requested_reviewers.map((reviewer) => (
+                      <Avatar key={reviewer.id} className="h-8 w-8 border-2 border-white">
+                        <AvatarImage src={reviewer.avatar_url} alt={reviewer.login} />
+                        <AvatarFallback>{reviewer.login.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        <AvatarGroupTooltip>
+                          <p>@{reviewer.login}</p>
+                        </AvatarGroupTooltip>
+                      </Avatar>
+                    ))}
+                  </AvatarGroup>
+                  {pr.requested_teams && pr.requested_teams.length > 0 && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      {pr.requested_teams.map((team, idx) => (
+                        <span key={team.id}>
+                          {idx > 0 && ', '}
+                          @{team.slug}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 )}
               </div>
 
