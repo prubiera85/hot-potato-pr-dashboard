@@ -6,6 +6,7 @@ import { PRCard } from './PRCard';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface DashboardProps {
   prs: EnhancedPR[];
@@ -208,94 +209,142 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
   }, [prs]);
 
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <button
-          onClick={() => handleStatClick('all')}
-          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
-            activeFilters.size === 5
-              ? 'bg-amber-50 border-amber-700'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <GitPullRequest className={`w-5 h-5 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`} />
-            <div className={`text-xl font-bold ${activeFilters.size === 5 ? 'text-amber-900' : 'text-gray-600'}`}>{stats.total}</div>
-          </div>
-          <div className={`text-xs mt-1 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`}>Total PRs</div>
-        </button>
-        <button
-          onClick={() => handleStatClick('urgent')}
-          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
-            activeFilters.has('urgent')
-              ? 'bg-red-50 border-red-500'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Flame className={`w-5 h-5 ${activeFilters.has('urgent') ? 'text-red-600' : 'text-gray-500'}`} />
-            <div className={`text-xl font-bold ${activeFilters.has('urgent') ? 'text-red-700' : 'text-gray-600'}`}>{stats.urgent}</div>
-          </div>
-          <div className={`text-xs mt-1 ${activeFilters.has('urgent') ? 'text-red-600' : 'text-gray-500'}`}>Urgentes</div>
-        </button>
-        <button
-          onClick={() => handleStatClick('quick')}
-          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
-            activeFilters.has('quick')
-              ? 'bg-yellow-50 border-yellow-400'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Zap className={`w-5 h-5 ${activeFilters.has('quick') ? 'text-yellow-600' : 'text-gray-500'}`} />
-            <div className={`text-xl font-bold ${activeFilters.has('quick') ? 'text-yellow-700' : 'text-gray-600'}`}>{stats.quick}</div>
-          </div>
-          <div className={`text-xs mt-1 ${activeFilters.has('quick') ? 'text-yellow-700' : 'text-gray-500'}`}>Rápidas</div>
-        </button>
-        <button
-          onClick={() => handleStatClick('missing-assignee')}
-          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
-            activeFilters.has('missing-assignee')
-              ? 'bg-orange-50 border-orange-500'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <User className={`w-5 h-5 ${activeFilters.has('missing-assignee') ? 'text-orange-700' : 'text-gray-500'}`} />
-            <div className={`text-xl font-bold ${activeFilters.has('missing-assignee') ? 'text-orange-800' : 'text-gray-600'}`}>{stats.missingAssignee}</div>
-          </div>
-          <div className={`text-xs mt-1 ${activeFilters.has('missing-assignee') ? 'text-orange-700' : 'text-gray-500'}`}>Sin assignee</div>
-        </button>
-        <button
-          onClick={() => handleStatClick('missing-reviewer')}
-          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
-            activeFilters.has('missing-reviewer')
-              ? 'bg-orange-50 border-orange-400'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Eye className={`w-5 h-5 ${activeFilters.has('missing-reviewer') ? 'text-orange-600' : 'text-gray-500'}`} />
-            <div className={`text-xl font-bold ${activeFilters.has('missing-reviewer') ? 'text-orange-700' : 'text-gray-600'}`}>{stats.missingReviewer}</div>
-          </div>
-          <div className={`text-xs mt-1 ${activeFilters.has('missing-reviewer') ? 'text-orange-600' : 'text-gray-500'}`}>Sin reviewer</div>
-        </button>
-        <button
-          onClick={() => handleStatClick('unassigned')}
-          className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
-            activeFilters.has('unassigned')
-              ? 'bg-orange-50 border-orange-300'
-              : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <AlertCircle className={`w-5 h-5 ${activeFilters.has('unassigned') ? 'text-orange-500' : 'text-gray-500'}`} />
-            <div className={`text-xl font-bold ${activeFilters.has('unassigned') ? 'text-orange-600' : 'text-gray-600'}`}>{stats.unassigned}</div>
-          </div>
-          <div className={`text-xs mt-1 ${activeFilters.has('unassigned') ? 'text-orange-500' : 'text-gray-500'}`}>Sin asignar</div>
-        </button>
-      </div>
+    <TooltipProvider delayDuration={0}>
+      <div className="space-y-6">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('all')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.size === 5
+                    ? 'bg-amber-50 border-amber-700'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <GitPullRequest className={`w-5 h-5 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.size === 5 ? 'text-amber-900' : 'text-gray-600'}`}>{stats.total}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`}>Total PRs</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Mostrar todas las PRs (activa todos los filtros)</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('urgent')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.has('urgent')
+                    ? 'bg-red-50 border-red-500'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Flame className={`w-5 h-5 ${activeFilters.has('urgent') ? 'text-red-600' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.has('urgent') ? 'text-red-700' : 'text-gray-600'}`}>{stats.urgent}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.has('urgent') ? 'text-red-600' : 'text-gray-500'}`}>Urgentes</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PRs marcadas con label 🔥 urgent</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('quick')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.has('quick')
+                    ? 'bg-yellow-50 border-yellow-400'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Zap className={`w-5 h-5 ${activeFilters.has('quick') ? 'text-yellow-600' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.has('quick') ? 'text-yellow-700' : 'text-gray-600'}`}>{stats.quick}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.has('quick') ? 'text-yellow-700' : 'text-gray-500'}`}>Rápidas</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PRs marcadas con label ⚡ quick</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('missing-assignee')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.has('missing-assignee')
+                    ? 'bg-orange-50 border-orange-500'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <User className={`w-5 h-5 ${activeFilters.has('missing-assignee') ? 'text-orange-700' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.has('missing-assignee') ? 'text-orange-800' : 'text-gray-600'}`}>{stats.missingAssignee}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.has('missing-assignee') ? 'text-orange-700' : 'text-gray-500'}`}>Sin assignee</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PRs sin revisor principal asignado para aprobarlas</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('missing-reviewer')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.has('missing-reviewer')
+                    ? 'bg-orange-50 border-orange-400'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Eye className={`w-5 h-5 ${activeFilters.has('missing-reviewer') ? 'text-orange-600' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.has('missing-reviewer') ? 'text-orange-700' : 'text-gray-600'}`}>{stats.missingReviewer}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.has('missing-reviewer') ? 'text-orange-600' : 'text-gray-500'}`}>Sin reviewer</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PRs que no tienen persona asignada para revisarlas</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('unassigned')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.has('unassigned')
+                    ? 'bg-orange-50 border-orange-300'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <AlertCircle className={`w-5 h-5 ${activeFilters.has('unassigned') ? 'text-orange-500' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.has('unassigned') ? 'text-orange-600' : 'text-gray-600'}`}>{stats.unassigned}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.has('unassigned') ? 'text-orange-500' : 'text-gray-500'}`}>Asignación incompleta</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PRs sin assignee O sin reviewer (o ambos)</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
 
       {/* Controls */}
       <div className="bg-white rounded-lg shadow p-4">
@@ -363,7 +412,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                         onCheckedChange={() => toggleFilter('unassigned')}
                       />
                       <span className="text-sm flex-1">
-                        Sin asignar <span className="text-gray-500">({stats.unassigned})</span>
+                        Asignación incompleta <span className="text-gray-500">({stats.unassigned})</span>
                       </span>
                     </label>
                     <label
@@ -525,6 +574,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

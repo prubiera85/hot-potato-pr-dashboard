@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Tooltips to all stat cards explaining what each filter does (instant display with delayDuration={0})
+
+### Changed
+- Renamed filter "Sin asignar" to "Asignación incompleta" for better clarity
+- Updated tooltip for "Sin assignee" to clarify it refers to the main reviewer who approves the PR
+
 ### Fixed
 - PR authors are now correctly excluded from the reviewers list when they submit reviews on their own PRs
 

@@ -75,9 +75,18 @@ Las stats cards ahora son **botones clickeables** que funcionan como filtros rá
 1. **Total PRs**: Marrón patata - Activa todos los filtros
 2. **Urgentes**: Rojo - Filtra solo PRs urgentes
 3. **Rápidas**: Amarillo - Filtra solo PRs rápidas
-4. **Sin assignee**: Naranja oscuro - Filtra PRs sin assignee
+4. **Sin assignee**: Naranja oscuro - Filtra PRs sin assignee (sin revisor principal para aprobar)
 5. **Sin reviewer**: Naranja medio - Filtra PRs sin reviewer
-6. **Sin asignar**: Naranja claro - Filtra PRs sin assignee O sin reviewer
+6. **Asignación incompleta**: Naranja claro - Filtra PRs sin assignee O sin reviewer
+
+**Tooltips de Stats Cards:**
+Todas las stats cards tienen tooltips instantáneos (`delayDuration={0}`) que explican qué hace cada filtro:
+- **Total PRs**: "Mostrar todas las PRs (activa todos los filtros)"
+- **Urgentes**: "PRs marcadas con label 🔥 urgent"
+- **Rápidas**: "PRs marcadas con label ⚡ quick"
+- **Sin assignee**: "PRs sin revisor principal asignado para aprobarlas"
+- **Sin reviewer**: "PRs que no tienen persona asignada para revisarlas"
+- **Asignación incompleta**: "PRs sin assignee O sin reviewer (o ambos)"
 
 ### Colores del Header
 
@@ -91,14 +100,16 @@ Las stats cards ahora son **botones clickeables** que funcionan como filtros rá
 
 Componente principal que contiene:
 - Stats cards clickeables (métricas de PRs que funcionan como filtros)
-- Dropdown de filtros (Urgente, Rápida, Sin asignar, Sin assignee, Sin reviewer)
+- Tooltips instantáneos en stats cards explicando cada filtro
+- Dropdown de filtros (Urgente, Rápida, Asignación incompleta, Sin assignee, Sin reviewer)
 - Filtro de repositorios (muestra TODOS los repos configurados, incluso sin PRs)
 - Ordenamiento de PRs
 - Lista de PRs
 - Estado vacío con GIF animado
 
 **Características importantes:**
-- Stats cards son botones con comportamiento exclusivo (click = solo ese filtro)
+- Stats cards son botones con tooltips informativos instantáneos (`delayDuration={0}`)
+- Stats cards con comportamiento exclusivo (click = solo ese filtro)
 - Checkboxes con `<label>` para mejor UX
 - Filtros activos controlan qué PRs se muestran (lógica OR/inclusiva)
 - Auto-refresco cada 5 minutos (cuando no está en modo test)
@@ -145,8 +156,8 @@ Componente raíz que maneja:
 **5 filtros disponibles:**
 1. Urgente (🔥)
 2. Rápida (⚡)
-3. Sin asignar (assignee O reviewer)
-4. Sin assignee
+3. Asignación incompleta (assignee O reviewer)
+4. Sin assignee (sin revisor principal para aprobar)
 5. Sin reviewer
 
 **Comportamiento:**
@@ -219,11 +230,38 @@ Por seguridad, los siguientes botones están ocultos con CSS hasta implementar a
 - Para colores específicos como `#ffeb9e`, usar `style={{ backgroundColor: '#ffeb9e' }}`
 - Usar variantes de Tailwind (hover:, focus:, etc.)
 
-### Componentes UI
+### Componentes UI con Shadcn/ui
 
-- Usar componentes de Shadcn/ui cuando sea posible
+**OBLIGATORIO: Siempre usar Shadcn/ui para componentes de UI**
+
+- **SIEMPRE** usar componentes de Shadcn/ui para cualquier elemento de interfaz
+- **SIEMPRE** consultar el MCP server de Shadcn antes de crear o modificar componentes UI
+- **NUNCA** crear componentes UI personalizados si existe una alternativa en Shadcn/ui
 - Todos los tooltips deben tener `delayDuration={0}`
 - Los checkboxes deben estar dentro de `<label>` para mejor accesibilidad
+
+**Workflow obligatorio para componentes UI:**
+1. Antes de crear/modificar UI, usar el MCP server de Shadcn (`mcp__shadcn__getComponent`)
+2. Revisar la documentación y ejemplos del componente
+3. Instalar el componente si no existe: `npx shadcn@latest add [component]`
+4. Usar el componente siguiendo las convenciones de Shadcn/ui
+5. Personalizar solo mediante Tailwind CSS y las props disponibles
+
+**Componentes Shadcn/ui disponibles en el proyecto:**
+- Button, Card, Checkbox, Dialog, DropdownMenu
+- Input, Label, Select, Separator
+- Sheet, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent
+- Avatar, AvatarImage, AvatarFallback
+- Badge (para labels de GitHub)
+
+**Para consultar componentes:**
+```typescript
+// Listar todos los componentes disponibles
+mcp__shadcn__getComponents
+
+// Obtener documentación de un componente específico
+mcp__shadcn__getComponent({ component: "button" })
+```
 
 ## Integraciones
 
@@ -319,20 +357,22 @@ Cuando se acumula un conjunto significativo de cambios en `[Unreleased]`:
 
 ## Notas Importantes
 
-1. **El reviewer NO afecta los colores**: Solo el assignee determina el color del borde
-2. **Los filtros son inclusivos**: Mostrar items que cumplan con AL MENOS UNO de los filtros activos
-3. **Tooltips inmediatos**: Siempre usar `delayDuration={0}` en TooltipProvider
-4. **Colores consistentes**: Usar la paleta amber para "patata", yellow para warnings, red para críticos
-5. **Accesibilidad**: Checkboxes dentro de labels, tooltips descriptivos, colores con buen contraste
-6. **Stats cards clickeables**: Comportamiento exclusivo (click = solo ese filtro activo)
-7. **Repositorios siempre visibles**: El selector muestra todos los repos configurados, tengan o no PRs
-8. **Versionado automático**: La versión se lee de package.json y se muestra en footer y console
-9. **Botones ocultos**: Config, Urgent y Quick están ocultos por CSS hasta implementar autenticación
-10. **Auto-refresh**: Cada 5 minutos (no en modo test)
-11. **Comentarios desglosados**: Se muestran comentarios generales + comentarios de código por separado
-12. **Exclusión de bots**: Los usuarios bot (tipo "Bot" o con "[bot]" en el nombre) se excluyen automáticamente de assignees y reviewers
-13. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
-14. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
+1. **El assignee es el revisor principal**: El assignee en este equipo representa al revisor principal que debe aprobar la PR, no a quien trabaja en ella
+2. **El reviewer NO afecta los colores**: Solo el assignee determina el color del borde
+3. **Los filtros son inclusivos**: Mostrar items que cumplan con AL MENOS UNO de los filtros activos
+4. **Tooltips inmediatos**: Siempre usar `delayDuration={0}` en TooltipProvider para tooltips instantáneos
+5. **Stats cards con tooltips**: Todas las stats cards tienen tooltips explicativos que aparecen instantáneamente
+6. **Colores consistentes**: Usar la paleta amber para "patata", yellow para warnings, red para críticos
+7. **Accesibilidad**: Checkboxes dentro de labels, tooltips descriptivos, colores con buen contraste
+8. **Stats cards clickeables**: Comportamiento exclusivo (click = solo ese filtro activo)
+9. **Repositorios siempre visibles**: El selector muestra todos los repos configurados, tengan o no PRs
+10. **Versionado automático**: La versión se lee de package.json y se muestra en footer y console
+11. **Botones ocultos**: Config, Urgent y Quick están ocultos por CSS hasta implementar autenticación
+12. **Auto-refresh**: Cada 5 minutos (no en modo test)
+13. **Comentarios desglosados**: Se muestran comentarios generales + comentarios de código por separado
+14. **Exclusión de bots**: Los usuarios bot (tipo "Bot" o con "[bot]" en el nombre) se excluyen automáticamente de assignees y reviewers
+15. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
+16. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
 
 ## Próximas Mejoras Potenciales
 
