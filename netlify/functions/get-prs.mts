@@ -64,13 +64,47 @@ export default async (req: Request, context: Context) => {
                     repo: repo.name,
                     pull_number: pr.number,
                   });
-                  issueComments = prDetails.comments || 0; // General conversation comments
-                  reviewComments = prDetails.review_comments || 0; // Code review comments
 
-                  // Helper function to check if a user is a bot
+                  // Helper function to check if a user is a bot or should be excluded from comments
                   const isBot = (user: any) => {
                     return user.type === "Bot" || user.login.toLowerCase().includes("[bot]");
                   };
+
+                  // Helper function to check if a comment author should be excluded
+                  const isExcludedCommentAuthor = (user: any) => {
+                    if (!user) return true;
+                    // Exclude bots
+                    if (isBot(user)) return true;
+                    // Exclude Linear bot specifically
+                    if (user.login.toLowerCase().includes("linear")) return true;
+                    return false;
+                  };
+
+                  // Get issue comments and filter
+                  try {
+                    const { data: comments } = await octokit.rest.issues.listComments({
+                      owner: repo.owner,
+                      repo: repo.name,
+                      issue_number: pr.number,
+                    });
+                    issueComments = comments.filter(comment => !isExcludedCommentAuthor(comment.user)).length;
+                  } catch (commentError) {
+                    console.error(`Error fetching comments for PR #${pr.number}:`, commentError);
+                    issueComments = prDetails.comments || 0; // Fallback to total count
+                  }
+
+                  // Get review comments and filter
+                  try {
+                    const { data: reviewCommentsList } = await octokit.rest.pulls.listReviewComments({
+                      owner: repo.owner,
+                      repo: repo.name,
+                      pull_number: pr.number,
+                    });
+                    reviewComments = reviewCommentsList.filter(comment => !isExcludedCommentAuthor(comment.user)).length;
+                  } catch (reviewCommentError) {
+                    console.error(`Error fetching review comments for PR #${pr.number}:`, reviewCommentError);
+                    reviewComments = prDetails.review_comments || 0; // Fallback to total count
+                  }
 
                   // Use the fresh data from the detailed call, filtering out bots
                   assignees = (prDetails.assignees || []).filter(user => !isBot(user));

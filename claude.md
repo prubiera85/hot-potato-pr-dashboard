@@ -124,7 +124,7 @@ Tarjeta individual de PR que muestra:
 - Labels de GitHub
 - Assignees y reviewers con avatares
 - Botones de "Urgente" y "Rápida" (**actualmente ocultos por CSS**)
-- Comentarios con tooltip descriptivo (desglose de comentarios generales vs código)
+- Comentarios con tooltip descriptivo (desglose de comentarios generales vs código, filtrados sin bots)
 
 **Lógica de colores:**
 ```typescript
@@ -271,12 +271,22 @@ Las funciones de Netlify se conectan a la API de GitHub para:
 - Obtener PRs de repositorios configurados
 - Obtener colaboradores de repos
 - Actualizar labels de PRs (urgent/quick)
+- Obtener comentarios individuales y filtrarlos (excluye bots y Linear bot)
 
 **Lógica de Reviewers:**
 - `requested_reviewers`: Reviewers solicitados que **aún NO han revisado** (se quitan automáticamente al completar review)
 - `pulls.listReviews()`: Obtiene todos los reviews completados
 - Se combinan ambas fuentes para mostrar reviewers pendientes + completados
 - Se filtran automáticamente: bots (tipo "Bot" o con "[bot]" en nombre) y el autor de la PR
+
+**Lógica de Comentarios:**
+- `issues.listComments()`: Obtiene comentarios generales de la conversación
+- `pulls.listReviewComments()`: Obtiene comentarios de código (review comments)
+- Se filtran automáticamente comentarios de:
+  - Bots (tipo "Bot" o con "[bot]" en nombre)
+  - Linear bot (usuarios con "linear" en el login)
+  - Comentarios sin usuario
+- Fallback al conteo total si hay error en la obtención de comentarios individuales
 
 ### Labels de GitHub
 
@@ -369,10 +379,12 @@ Cuando se acumula un conjunto significativo de cambios en `[Unreleased]`:
 10. **Versionado automático**: La versión se lee de package.json y se muestra en footer y console
 11. **Botones ocultos**: Config, Urgent y Quick están ocultos por CSS hasta implementar autenticación
 12. **Auto-refresh**: Cada 5 minutos (no en modo test)
-13. **Comentarios desglosados**: Se muestran comentarios generales + comentarios de código por separado
-14. **Exclusión de bots**: Los usuarios bot (tipo "Bot" o con "[bot]" en el nombre) se excluyen automáticamente de assignees y reviewers
-15. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
-16. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
+13. **Comentarios filtrados**: Los comentarios excluyen bots y Linear bot automáticamente
+14. **Comentarios desglosados**: Se muestran comentarios generales + comentarios de código por separado (ambos filtrados)
+15. **Exclusión de bots**: Los usuarios bot (tipo "Bot" o con "[bot]" en el nombre) se excluyen automáticamente de assignees, reviewers y comentarios
+16. **Exclusión de Linear**: Los comentarios de Linear bot se excluyen automáticamente del conteo
+17. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
+18. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
 
 ## Próximas Mejoras Potenciales
 

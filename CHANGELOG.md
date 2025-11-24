@@ -9,13 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Tooltips to all stat cards explaining what each filter does (instant display with delayDuration={0})
+- Comment filtering to exclude bot comments (Linear bot, and other bots)
 
 ### Changed
 - Renamed filter "Sin asignar" to "Asignación incompleta" for better clarity
 - Updated tooltip for "Sin assignee" to clarify it refers to the main reviewer who approves the PR
+- Comment counts now fetch individual comments and filter out bot authors (Linear, GitHub bots, etc.)
 
 ### Fixed
 - PR authors are now correctly excluded from the reviewers list when they submit reviews on their own PRs
+- Comment counts no longer include bot comments (Linear bot specifically excluded)
 
 ## [1.1.1] - 2025-01-20
 
