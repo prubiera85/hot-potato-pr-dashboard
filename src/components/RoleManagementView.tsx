@@ -6,6 +6,16 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import { useHasPermission } from '@/hooks/usePermissions';
 import type { UserRole } from '@/types/github';
 import { ROLE_DESCRIPTIONS } from '@/types/github';
@@ -30,6 +40,10 @@ export function RoleManagementView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newUsernames, setNewUsernames] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('developer');
+
+  // Delete confirmation state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   // Fetch user roles
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
@@ -69,8 +83,9 @@ export function RoleManagementView() {
       }
       return { success: true };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-roles'] });
+    onSuccess: async () => {
+      // Refetch immediately to update the list
+      await queryClient.refetchQueries({ queryKey: ['user-roles'] });
       setNewUsernames('');
       setNewRole('developer');
       setIsDialogOpen(false);
@@ -94,8 +109,9 @@ export function RoleManagementView() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-roles'] });
+    onSuccess: async () => {
+      // Refetch immediately to update the list
+      await queryClient.refetchQueries({ queryKey: ['user-roles'] });
     },
   });
 
@@ -120,8 +136,15 @@ export function RoleManagementView() {
   };
 
   const handleRemoveUser = (username: string) => {
-    if (confirm(`¿Seguro que quieres eliminar a @${username}?`)) {
-      removeUserMutation.mutate(username);
+    setUserToDelete(username);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (userToDelete) {
+      removeUserMutation.mutate(userToDelete);
+      setIsDeleteDialogOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -386,6 +409,29 @@ export function RoleManagementView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará el acceso del usuario <span className="font-semibold">@{userToDelete}</span>.
+              El usuario quedará como "guest" en su próximo login y no podrá acceder a las funciones de la aplicación.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={removeUserMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {removeUserMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
