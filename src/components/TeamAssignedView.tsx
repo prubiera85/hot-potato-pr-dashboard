@@ -100,8 +100,13 @@ export function TeamAssignedView({ prs, maxDaysOpen, isLoading = false, onRefres
       });
     } else if (!githubUser) {
       // User is registered but not in any PR, create a minimal user object
+      // Use a deterministic ID based on username to ensure consistency across renders
+      const deterministicId = -1 * Math.abs(regUser.username.split('').reduce((acc: number, char: string) => {
+        return acc + char.charCodeAt(0);
+      }, 0));
+
       const minimalUser: GitHubUser = {
-        id: Math.random() * -1000000, // Negative ID to avoid conflicts
+        id: deterministicId,
         login: regUser.username,
         avatar_url: regUser.avatar_url || `https://github.com/${regUser.username}.png`,
         html_url: `https://github.com/${regUser.username}`,
