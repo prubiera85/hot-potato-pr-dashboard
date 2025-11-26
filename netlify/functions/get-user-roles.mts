@@ -1,5 +1,5 @@
 import type { Config } from '@netlify/functions';
-import Netlify from '@netlify/functions';
+import * as Netlify from '@netlify/functions';
 import { requireAuth } from './auth/middleware.mts';
 import type { UserRole } from '../../src/types/github';
 
