@@ -225,29 +225,31 @@ export function TeamAssignedView({ prs, maxDaysOpen, isLoading = false, onRefres
                 onOpenChange={() => toggleUser(workload.user.id)}
               >
                 {/* User row */}
-                <CollapsibleTrigger className="w-full hover:bg-gray-50 transition-colors">
-                  <div className="grid grid-cols-[1fr_150px] gap-4 px-6 py-4 items-center">
-                    <div className="flex items-center gap-3">
-                      {isOpen ? (
-                        <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
-                      )}
-                      <img
-                        src={workload.user.avatar_url}
-                        alt={workload.user.login}
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <div className="text-left">
-                        <div className="font-medium text-gray-900">
-                          {workload.user.login}
+                <CollapsibleTrigger asChild>
+                  <button className="w-full hover:bg-gray-50 transition-colors text-left">
+                    <div className="grid grid-cols-[1fr_150px] gap-4 px-6 py-4 items-center">
+                      <div className="flex items-center gap-3">
+                        {isOpen ? (
+                          <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                        )}
+                        <img
+                          src={workload.user.avatar_url}
+                          alt={workload.user.login}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div className="text-left">
+                          <div className="font-medium text-gray-900">
+                            {workload.user.login}
+                          </div>
                         </div>
                       </div>
+                      <div className="text-center font-semibold text-gray-900">
+                        {workload.totalAssigned}
+                      </div>
                     </div>
-                    <div className="text-center font-semibold text-gray-900">
-                      {workload.totalAssigned}
-                    </div>
-                  </div>
+                  </button>
                 </CollapsibleTrigger>
 
                 {/* Expanded PR list */}
