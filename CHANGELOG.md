@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Acceso abierto habilitado**: Se eliminó la restricción de whitelist, ahora cualquier usuario con cuenta de GitHub puede hacer login
 - **Botones de urgente/rápida**: Ahora solo visibles para developer, admin y superadmin
+- **Optimistic updates para botones urgente/rápida**: Actualización instantánea sin refresh de toda la lista
+  - Cambio inmediato del estado visual del botón (relleno/outline)
+  - Sin saltos de scroll ni recargas innecesarias
+  - Rollback automático en caso de error
 - **Botón de configuración**: Ahora solo visible para admin y superadmin
 - Documentación actualizada en CLAUDE.md para reflejar el modo de acceso abierto y sistema de roles
 - JWT ahora incluye el campo `role` del usuario

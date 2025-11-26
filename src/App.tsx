@@ -157,8 +157,48 @@ function AppContent() {
       }
       return response.json();
     },
+    onMutate: async (pr) => {
+      console.log('🔄 [Urgent Mutation] onMutate called', { prId: pr.id, currentIsUrgent: pr.isUrgent });
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+      console.log('📸 [Urgent Mutation] Previous data snapshot taken');
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) {
+          console.log('❌ [Urgent Mutation] No old data found');
+          return old;
+        }
+
+        const newIsUrgent = !pr.isUrgent;
+        console.log('🎯 [Urgent Mutation] Toggling urgent:', pr.isUrgent, '->', newIsUrgent);
+
+        const updated = {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              return {
+                ...p,
+                isUrgent: newIsUrgent,
+              };
+            }
+            return p;
+          }),
+        };
+
+        console.log('✅ [Urgent Mutation] Data updated optimistically');
+        return updated;
+      });
+
+      return { previousPRs };
+    },
     onSuccess: (_, pr) => {
-      queryClient.invalidateQueries({ queryKey: ['prs', isTestMode] });
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Urgent Mutation] Success - keeping optimistic update');
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -166,7 +206,12 @@ function AppContent() {
         return next;
       });
     },
-    onError: (_, pr) => {
+    onError: (_, pr, context) => {
+      // Rollback on error
+      console.log('❌ [Urgent Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -205,8 +250,48 @@ function AppContent() {
       }
       return response.json();
     },
+    onMutate: async (pr) => {
+      console.log('🔄 [Quick Mutation] onMutate called', { prId: pr.id, currentIsQuick: pr.isQuick });
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+      console.log('📸 [Quick Mutation] Previous data snapshot taken');
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) {
+          console.log('❌ [Quick Mutation] No old data found');
+          return old;
+        }
+
+        const newIsQuick = !pr.isQuick;
+        console.log('🎯 [Quick Mutation] Toggling quick:', pr.isQuick, '->', newIsQuick);
+
+        const updated = {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              return {
+                ...p,
+                isQuick: newIsQuick,
+              };
+            }
+            return p;
+          }),
+        };
+
+        console.log('✅ [Quick Mutation] Data updated optimistically');
+        return updated;
+      });
+
+      return { previousPRs };
+    },
     onSuccess: (_, pr) => {
-      queryClient.invalidateQueries({ queryKey: ['prs', isTestMode] });
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Quick Mutation] Success - keeping optimistic update');
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -214,7 +299,12 @@ function AppContent() {
         return next;
       });
     },
-    onError: (_, pr) => {
+    onError: (_, pr, context) => {
+      // Rollback on error
+      console.log('❌ [Quick Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
