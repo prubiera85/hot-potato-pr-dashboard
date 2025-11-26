@@ -1,7 +1,7 @@
 "use client"
 
 import {
-  BadgeCheck,
+  User,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react"
@@ -112,7 +112,7 @@ export function NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheck className="mr-2 h-4 w-4" />
+                <User className="mr-2 h-4 w-4" />
                 Mi perfil
               </DropdownMenuItem>
             </DropdownMenuGroup>

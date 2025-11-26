@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { RefreshCw, User, ChevronDown, ChevronRight } from 'lucide-react';
+import { RefreshCw, Inbox, ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -110,7 +110,7 @@ export function MyPRsView({
       <div>
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <User className="w-8 h-8 text-blue-600" />
+            <Inbox className="w-8 h-8 text-purple-600" />
             Mis PRs
           </h1>
           <Button

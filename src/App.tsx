@@ -6,7 +6,8 @@ import { ConfigView } from './components/ConfigView';
 import { LoginScreen } from './components/LoginScreen';
 import { AuthCallback } from './components/AuthCallback';
 import { MyPRsView } from './components/MyPRsView';
-import { TeamView } from './components/TeamView';
+import { TeamAssignedView } from './components/TeamAssignedView';
+import { TeamCreatedView } from './components/TeamCreatedView';
 import { RoleManagementView } from './components/RoleManagementView';
 import { GamificationView } from './components/GamificationView';
 import { AppSidebar } from './components/app-sidebar';
@@ -36,7 +37,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { isAuthenticated, token, user, logout } = useAuthStore();
-  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team' | 'config' | 'roles' | 'gamification'>('all');
+  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team-assigned' | 'team-created' | 'config' | 'roles' | 'gamification'>('all');
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
@@ -613,7 +614,7 @@ function AppContent() {
     <SidebarProvider>
       <AppSidebar
         currentView={currentView}
-        onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team' | 'config' | 'roles')}
+        onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team-assigned' | 'team-created' | 'config' | 'roles' | 'gamification')}
         onOpenGifModal={() => setIsGifModalOpen(true)}
         onOpenHelp={() => setIsHelpModalOpen(true)}
       />
@@ -626,16 +627,17 @@ function AppContent() {
                 <BreadcrumbItem>
                   <BreadcrumbLink className="cursor-pointer">
                     {(currentView === 'all' || currentView === 'my-prs') && 'Pull Requests'}
-                    {currentView === 'team' && 'Equipo'}
+                    {(currentView === 'team-assigned' || currentView === 'team-created') && 'Equipo'}
                     {(currentView === 'config' || currentView === 'roles' || currentView === 'gamification') && 'Zona Admin'}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbPage>
-                    {currentView === 'all' && 'Todas las PRs'}
+                    {currentView === 'all' && 'Dashboard'}
                     {currentView === 'my-prs' && 'Mis PRs'}
-                    {currentView === 'team' && 'Vista por Usuario'}
+                    {currentView === 'team-assigned' && 'Revisores'}
+                    {currentView === 'team-created' && 'PRs en Activo'}
                     {currentView === 'config' && 'Configuración'}
                     {currentView === 'roles' && 'Gestión de Roles'}
                     {currentView === 'gamification' && 'Gamificación'}
@@ -742,7 +744,22 @@ function AppContent() {
                 isRefreshing={isFetching && !isTestMode}
               />
             )}
-            {currentView === 'team' && <TeamView />}
+            {currentView === 'team-assigned' && (
+              <TeamAssignedView
+                prs={prs}
+                maxDaysOpen={config.maxDaysOpen}
+                isLoading={isFetching}
+                onRefresh={() => refetch()}
+              />
+            )}
+            {currentView === 'team-created' && (
+              <TeamCreatedView
+                prs={prs}
+                maxDaysOpen={config.maxDaysOpen}
+                isLoading={isFetching}
+                onRefresh={() => refetch()}
+              />
+            )}
             {currentView === 'config' && (
               <ConfigView
                 config={config}

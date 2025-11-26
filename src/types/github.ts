@@ -133,7 +133,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, RoleConfig> = {
   superadmin: {
-    name: 'Super Admin',
+    name: 'Superadmin',
     description: 'Acceso completo incluyendo gamificación',
     permissions: ROLE_PERMISSIONS.superadmin,
   },

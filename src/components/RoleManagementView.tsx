@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ interface UserRoleInfo {
   role: UserRole;
   addedAt?: string;
   addedBy?: string;
+  avatar_url?: string;
 }
 
 export function RoleManagementView() {
@@ -308,9 +310,15 @@ export function RoleManagementView() {
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                        <UserIcon className="w-5 h-5 text-gray-600" />
-                      </div>
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage
+                          src={user.avatar_url || `https://github.com/${user.username}.png`}
+                          alt={user.username}
+                        />
+                        <AvatarFallback className="bg-amber-700 text-white">
+                          {user.username.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="font-medium text-gray-900">@{user.username}</p>
                         <p className="text-sm text-gray-500">

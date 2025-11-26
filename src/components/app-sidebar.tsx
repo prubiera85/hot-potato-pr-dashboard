@@ -1,4 +1,4 @@
-import { LayoutGrid, User, Users, HelpCircle, Shield, Settings, Trophy } from 'lucide-react';
+import { LayoutGrid, Inbox, HelpCircle, Shield, Settings, Trophy, Eye, GitPullRequest } from 'lucide-react';
 import { NavUser } from './nav-user';
 import {
   Sidebar,
@@ -55,12 +55,12 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Todas las PRs"
+                  tooltip="Dashboard"
                   isActive={currentView === 'all'}
                   onClick={() => onViewChange('all')}
                 >
                   <LayoutGrid className="h-4 w-4" />
-                  <span>Todas las PRs</span>
+                  <span>Dashboard</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -69,7 +69,7 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
                   isActive={currentView === 'my-prs'}
                   onClick={() => onViewChange('my-prs')}
                 >
-                  <User className="h-4 w-4" />
+                  <Inbox className="h-4 w-4" />
                   <span>Mis PRs</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -84,12 +84,22 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Vista por usuario"
-                  isActive={currentView === 'team'}
-                  onClick={() => onViewChange('team')}
+                  tooltip="Revisores y su carga de trabajo"
+                  isActive={currentView === 'team-assigned'}
+                  onClick={() => onViewChange('team-assigned')}
                 >
-                  <Users className="h-4 w-4" />
-                  <span>Vista por Usuario</span>
+                  <Eye className="h-4 w-4" />
+                  <span>Revisores</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="PRs activas por usuario"
+                  isActive={currentView === 'team-created'}
+                  onClick={() => onViewChange('team-created')}
+                >
+                  <GitPullRequest className="h-4 w-4" />
+                  <span>PRs en Activo</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
