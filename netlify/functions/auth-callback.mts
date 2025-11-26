@@ -100,7 +100,7 @@ export default async (request: Request, context: Context) => {
     }
 
     // Step 4: Get user role based on configuration
-    const role = getUserRole(githubUser.login);
+    const role = await getUserRole(githubUser.login);
 
     // Step 5: Create user payload
     const user: UserPayload = {

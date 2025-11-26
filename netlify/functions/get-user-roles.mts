@@ -1,11 +1,6 @@
 import type { Config } from '@netlify/functions';
 import { requireAuth } from './auth/middleware.mts';
-import type { UserRole } from '../../src/types/github';
-
-interface UserRoleInfo {
-  username: string;
-  role: UserRole;
-}
+import { getUserRoles } from './lib/user-roles-store.mts';
 
 export default async (request: Request) => {
   try {
@@ -20,26 +15,11 @@ export default async (request: Request) => {
       );
     }
 
-    // Obtener la configuración de roles
-    const rolesConfig = process.env.USER_ROLES;
-    if (!rolesConfig) {
-      return new Response(
-        JSON.stringify({ users: [] }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    // Obtener usuarios del blob storage
+    let users = await getUserRoles();
 
-    // Parsear la configuración
-    const users: UserRoleInfo[] = [];
-    rolesConfig.split(',').forEach(entry => {
-      const [username, role] = entry.split(':').map(s => s.trim());
-      if (username && role && role !== 'superadmin') { // Excluir superadmin
-        users.push({
-          username,
-          role: role as UserRole
-        });
-      }
-    });
+    // Excluir superadmin de la lista visible
+    users = users.filter(u => u.role !== 'superadmin');
 
     // Ordenar por rol (admin primero, luego developer) y luego alfabéticamente
     const roleOrder: Record<string, number> = {
