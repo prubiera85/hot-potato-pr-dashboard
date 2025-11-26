@@ -50,7 +50,7 @@ export function NavUser() {
         .slice(0, 2)
     : user.login.slice(0, 2).toUpperCase();
 
-  const roleInfo = ROLE_DESCRIPTIONS[user.role];
+  const roleInfo = ROLE_DESCRIPTIONS[user.role] || ROLE_DESCRIPTIONS.guest;
   const getRoleBadgeColor = () => {
     switch (user.role) {
       case 'superadmin':
