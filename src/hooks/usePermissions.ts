@@ -7,13 +7,14 @@ import { ROLE_PERMISSIONS } from '../types/github';
  * Returns the permissions object for the current user's role
  */
 export function usePermissions(): UserPermissions {
-  const { user, getPermissions } = useAuthStore();
+  const { user } = useAuthStore();
 
-  if (!user) {
+  if (!user || !user.role) {
     return ROLE_PERMISSIONS.guest;
   }
 
-  return getPermissions();
+  // Always get fresh permissions from ROLE_PERMISSIONS to avoid stale data
+  return ROLE_PERMISSIONS[user.role] || ROLE_PERMISSIONS.guest;
 }
 
 /**
@@ -27,7 +28,7 @@ export function usePermissions(): UserPermissions {
  */
 export function useHasPermission(permission: keyof UserPermissions): boolean {
   const permissions = usePermissions();
-  return permissions[permission];
+  return permissions?.[permission] ?? false;
 }
 
 /**
