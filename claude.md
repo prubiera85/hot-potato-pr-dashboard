@@ -798,6 +798,59 @@ Por seguridad, los siguientes botones están ocultos con CSS hasta implementar a
 
 ## Convenciones de Código
 
+### Metodología de Root Cause Analysis para Bugs
+
+**OBLIGATORIO: Cuando se reporte un bug, siempre aplicar esta metodología antes de proponer una solución:**
+
+1. **Comparar comportamiento**:
+   - ¿Funciona en local pero no en producción? ¿O viceversa?
+   - ¿Qué es diferente entre los entornos?
+   - ¿Hay diferencias de datos, timing, o configuración?
+
+2. **Revisar código que funciona**:
+   - Buscar patrones similares en el codebase que SÍ funcionan correctamente
+   - Comparar implementaciones para identificar diferencias sutiles
+   - Usar componentes que funcionan como referencia
+
+3. **Analizar diferencias de entorno**:
+   - Build de producción: minificación, tree-shaking, optimizaciones
+   - React en producción: StrictMode desactivado, menos re-renders
+   - Timing: network latency, async operations, race conditions
+   - Estado: hydration, SSR vs CSR
+
+4. **Identificar assumptions incorrectas**:
+   - ¿Qué estoy asumiendo que puede no ser cierto?
+   - ¿Dependo de algo que puede variar (orden, timing, IDs)?
+   - ¿Hay side effects no considerados?
+
+5. **Buscar state inconsistencies**:
+   - **IDs no determinísticos** (Math.random, Date.now en keys)
+   - Referencias que cambian entre renders
+   - Closures que capturan valores stale
+   - Dependencies incorrectas en useEffect/useMemo
+   - Estado asíncrono no sincronizado
+
+6. **Validar con datos reales**:
+   - No solo probar el caso "happy path"
+   - Probar con datos vacíos, nulls, undefined
+   - Probar límites y casos edge
+
+**Ejemplo real:**
+```
+Bug: Collapsible no se expande en producción, pero funciona en local
+❌ Primera hipótesis: Problema con el componente Collapsible
+❌ Segunda hipótesis: Problema con asChild prop
+✅ Root cause real: Math.random() generaba IDs diferentes en cada render,
+   rompiendo el state tracking de React. En producción había más re-renders.
+✅ Solución: Usar ID determinístico basado en username
+```
+
+**Beneficios:**
+- Evita soluciones superficiales que no resuelven el problema real
+- Ahorra tiempo al no aplicar "fixes" innecesarios
+- Identifica la causa raíz en lugar de los síntomas
+- Previene que el mismo problema aparezca en otros lugares
+
 ### Nombres de Variables
 
 - `pr`: Pull Request individual
