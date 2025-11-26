@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Flame, Zap, Clock, MessageSquare, GitPullRequest, RefreshCw, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, Flame, Zap, Clock, MessageSquare, GitPullRequest, RefreshCw, ExternalLink, Loader2 } from 'lucide-react';
 import { EnhancedPR, GitHubUser } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -113,7 +113,16 @@ export function TeamCreatedView({ prs, maxDaysOpen, isLoading = false, onRefresh
         </Button>
       </div>
 
+      {/* Loading state */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+          <Loader2 className="w-6 h-6 animate-spin mr-2 text-gray-500" />
+          <span className="text-gray-600">Cargando datos...</span>
+        </div>
+      )}
+
       {/* Table */}
+      {!isLoading && (
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         {/* Table header */}
         <div className="grid grid-cols-[1fr_150px] gap-4 px-6 py-3 bg-gray-100 border-b border-gray-200 font-semibold text-sm text-gray-700">
@@ -320,6 +329,7 @@ export function TeamCreatedView({ prs, maxDaysOpen, isLoading = false, onRefresh
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
