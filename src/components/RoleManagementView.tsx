@@ -72,7 +72,9 @@ export function RoleManagementView() {
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Roles Disponibles</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.entries(ROLE_DESCRIPTIONS).map(([roleKey, roleInfo]) => {
+          {Object.entries(ROLE_DESCRIPTIONS)
+            .filter(([roleKey]) => roleKey !== 'superadmin') // Ocultar rol superadmin
+            .map(([roleKey, roleInfo]) => {
             const role = roleKey as UserRole;
             return (
               <Card key={role} className="hover:shadow-md transition-shadow">
