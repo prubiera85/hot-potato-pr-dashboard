@@ -1,5 +1,4 @@
 import type { Config } from '@netlify/functions';
-import * as Netlify from '@netlify/functions';
 import { requireAuth } from './auth/middleware.mts';
 import type { UserRole } from '../../src/types/github';
 
@@ -22,7 +21,7 @@ export default async (request: Request) => {
     }
 
     // Obtener la configuración de roles
-    const rolesConfig = Netlify.env.get('USER_ROLES');
+    const rolesConfig = process.env.USER_ROLES;
     if (!rolesConfig) {
       return new Response(
         JSON.stringify({ users: [] }),
