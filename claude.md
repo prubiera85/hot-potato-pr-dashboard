@@ -32,8 +32,10 @@ pr-dashboard/
 │   │   ├── app-sidebar.tsx   # Sidebar principal con navegación
 │   │   ├── nav-user.tsx      # Componente de usuario estilo sidebar-07
 │   │   ├── Dashboard.tsx     # Componente principal del dashboard
-│   │   ├── MyPRsView.tsx     # Vista de "Mis PRs" (placeholder)
-│   │   ├── TeamView.tsx      # Vista por usuario (placeholder)
+│   │   ├── MyPRsView.tsx     # Vista de "Mis PRs" con secciones plegables
+│   │   ├── TeamAssignedView.tsx  # Vista "Revisores" - carga de trabajo por usuario
+│   │   ├── TeamCreatedView.tsx   # Vista "PRs en Activo" - PRs creadas por usuario
+│   │   ├── RoleManagementView.tsx # Vista de gestión de roles y permisos
 │   │   ├── PRCard.tsx        # Tarjeta individual de PR
 │   │   ├── ConfigPanel.tsx   # Panel de configuración
 │   │   ├── LoginScreen.tsx   # Pantalla de login con GitHub OAuth
@@ -491,8 +493,8 @@ La aplicación usa un sidebar colapsible basado en el patrón sidebar-07 de Shad
 - **Estructura de navegación**:
   - **Header**: Logo de patata clickeable (animación wiggle + popup GIF)
   - **Content**: Dos secciones de navegación
-    - **Pull Requests**: "Todas las PRs", "Mis PRs"
-    - **Equipo**: "Vista por Usuario"
+    - **Pull Requests**: "Dashboard", "Mis PRs"
+    - **Equipo**: "Revisores", "PRs en Activo"
   - **Footer**: Botón "Leyenda de colores" + NavUser component
 
 **Componentes relacionados:**
@@ -504,16 +506,18 @@ La aplicación usa un sidebar colapsible basado en el patrón sidebar-07 de Shad
 ### Breadcrumbs
 
 El header muestra breadcrumbs dinámicos en lugar del título:
-- **Pull Requests** > **Todas las PRs** / **Mis PRs**
-- **Equipo** > **Vista por Usuario**
+- **Pull Requests** > **Dashboard** / **Mis PRs**
+- **Equipo** > **Revisores** / **PRs en Activo**
 
 Los breadcrumbs se actualizan automáticamente según la vista actual.
 
 ### Vistas Disponibles
 
-1. **Todas las PRs** (`currentView='all'`): Vista principal del Dashboard
-2. **Mis PRs** (`currentView='my-prs'`): Placeholder - PRs donde soy assignee o reviewer
-3. **Vista por Usuario** (`currentView='team'`): Placeholder - Resumen por miembro del equipo
+1. **Dashboard** (`currentView='all'`): Vista principal con todas las PRs y filtros
+2. **Mis PRs** (`currentView='my-prs'`): Vista personal con PRs creadas y asignadas al usuario
+3. **Revisores** (`currentView='team-assigned'`): Carga de trabajo de revisores (assignees y reviewers)
+4. **PRs en Activo** (`currentView='team-created'`): PRs activas creadas por cada usuario
+5. **Gestión de Roles** (`currentView='roles'`): Administración de usuarios y permisos (solo admins)
 
 ### NavUser Component
 
@@ -595,6 +599,78 @@ myAssignedPRs = prs.filter(pr =>
 ```
 
 **Nota:** Una PR puede aparecer en ambas secciones si la creaste y te autoasignaste.
+
+### TeamAssignedView.tsx
+
+Vista de carga de trabajo de revisores (assignees y reviewers):
+
+**Características:**
+- Icono Eye (verde) para representar "revisores"
+- Botón de refrescar en la esquina superior derecha
+- Spinner de carga mientras obtiene datos de GitHub y usuarios registrados
+- Muestra TODOS los usuarios registrados, incluso con 0 PRs asignadas
+
+**Funcionalidad:**
+- Query a `/api/get-user-roles` para obtener usuarios registrados
+- Agrupa PRs por usuario (como assignee o reviewer)
+- Combina datos de GitHub con usuarios registrados del sistema
+- Usuarios sin PRs en GitHub se muestran con 0 asignaciones
+
+**Estructura de tabla:**
+- Header: Usuario | PRs Asignadas
+- Filas colapsables (Collapsible component)
+- Click en fila para expandir/contraer detalles
+- Tabla interna con PRs individuales cuando hay asignaciones
+
+**Detalles de PR expandida:**
+- Repositorio, título con link, rol (Assignee/Reviewer)
+- Autor, comentarios, tiempo abierta
+- Iconos urgente/rápida, link a GitHub
+- Borde coloreado según estado (rojo/amarillo/marrón)
+
+**ID determinístico:**
+- Para usuarios sin PRs en GitHub, usa ID basado en username
+- Suma de charCodes del username convertido a negativo
+- Previene que Collapsible pierda estado entre re-renders
+- **CRÍTICO**: No usar `Math.random()` para IDs de usuarios
+
+**Ordenamiento:**
+1. Por cantidad de PRs asignadas (descendente)
+2. Por username alfabético (si empate en cantidad)
+
+### TeamCreatedView.tsx
+
+Vista de PRs activas creadas por cada usuario:
+
+**Características:**
+- Icono GitPullRequest (naranja) para representar "PRs en activo"
+- Botón de refrescar en la esquina superior derecha
+- Spinner de carga mientras obtiene datos
+- Solo muestra usuarios que tienen PRs activas creadas
+
+**Funcionalidad:**
+- Agrupa PRs por creador (pr.user)
+- Filtra usuarios sin PRs creadas
+- Ordena por cantidad de PRs creadas (descendente)
+
+**Estructura de tabla:**
+- Header: Usuario | PRs Creadas
+- Filas colapsables (Collapsible component)
+- Click en fila para expandir/contraer detalles
+- Tabla interna con PRs individuales
+
+**Detalles de PR expandida:**
+- Repositorio, título con link
+- Assignees badges (azul) o "Sin assignee" (rojo)
+- Reviewers badges (morado) o "Sin reviewers" (naranja)
+- Comentarios, tiempo abierta
+- Iconos urgente/rápida, link a GitHub
+- Borde coloreado según estado
+
+**Diferencia con TeamAssignedView:**
+- No muestra usuarios sin PRs creadas
+- No requiere query de usuarios registrados
+- Enfoque en PRs activas del autor, no en revisiones
 
 ### PRCard.tsx
 
@@ -1065,13 +1141,17 @@ Cuando se acumula un conjunto significativo de cambios en `[Unreleased]`:
 25. **No invalidateQueries en onSuccess**: CRÍTICO - esto causaría refresh de toda la lista, arruinando la UX
 26. **QueryKey consistency**: Todas las operaciones React Query deben usar `['prs', isTestMode]` exactamente
 27. **Labels sincronizados**: Los arrays de labels se actualizan junto con isUrgent/isQuick para mostrar badges instantáneamente
+28. **IDs determinísticos**: NUNCA usar `Math.random()` o `Date.now()` para IDs de componentes con estado (keys, Collapsible, etc.)
+29. **Usuarios registrados siempre visibles**: La vista Revisores muestra todos los usuarios del sistema, incluso sin PRs
+30. **Favicon personalizado**: Se usa `/potato-ico.ico` como favicon en lugar del default de Vite
 
 ## Próximas Mejoras Potenciales
 
 - [x] Sistema de autenticación con GitHub OAuth
 - [x] Reactivar botones de configuración y acciones (tras autenticación)
-- [ ] Filtro "Mis PRs" (mostrar solo PRs donde soy assignee o reviewer)
-- [ ] Vista por usuario (resumen de PRs asignadas a cada miembro)
+- [x] Vista "Mis PRs" con PRs creadas y asignadas
+- [x] Vista "Revisores" con carga de trabajo por usuario
+- [x] Vista "PRs en Activo" con PRs creadas por usuario
 - [ ] Notificaciones push cuando una PR se vuelve crítica
 - [ ] Métricas de tiempo de respuesta por equipo
 - [ ] Integración con Slack
