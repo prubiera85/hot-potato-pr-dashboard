@@ -27,10 +27,9 @@ export default async (request: Request) => {
 
     const method = request.method;
 
-    // GET - Listar usuarios (reutiliza la lógica de get-user-roles)
+    // GET - Listar usuarios
     if (method === 'GET') {
-      let users = await getUserRoles();
-      users = users.filter(u => u.role !== 'superadmin');
+      const users = await getUserRoles();
 
       return new Response(
         JSON.stringify({ users }),
@@ -50,10 +49,10 @@ export default async (request: Request) => {
       }
 
       // Validar que el rol sea válido
-      const validRoles: UserRole[] = ['admin', 'developer', 'guest'];
+      const validRoles: UserRole[] = ['admin', 'developer'];
       if (!validRoles.includes(body.role)) {
         return new Response(
-          JSON.stringify({ error: 'Invalid role. Must be: admin, developer, or guest' }),
+          JSON.stringify({ error: 'Invalid role. Must be: admin or developer' }),
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
       }
@@ -75,7 +74,7 @@ export default async (request: Request) => {
       return new Response(
         JSON.stringify({
           success: true,
-          users: users.filter(u => u.role !== 'superadmin')
+          users
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
@@ -105,7 +104,7 @@ export default async (request: Request) => {
       return new Response(
         JSON.stringify({
           success: true,
-          users: users.filter(u => u.role !== 'superadmin')
+          users
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );

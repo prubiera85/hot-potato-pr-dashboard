@@ -16,13 +16,11 @@ export default async (request: Request) => {
     }
 
     // Obtener usuarios del blob storage
-    let users = await getUserRoles();
+    const users = await getUserRoles();
 
-    // Excluir superadmin de la lista visible
-    users = users.filter(u => u.role !== 'superadmin');
-
-    // Ordenar por rol (admin primero, luego developer) y luego alfabéticamente
+    // Ordenar por rol (superadmin primero, luego admin, luego developer) y luego alfabéticamente
     const roleOrder: Record<string, number> = {
+      'superadmin': 0,
       'admin': 1,
       'developer': 2,
       'guest': 3

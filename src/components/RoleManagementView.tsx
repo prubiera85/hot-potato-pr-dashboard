@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { useHasPermission } from '@/hooks/usePermissions';
 import type { UserRole } from '@/types/github';
 import { ROLE_DESCRIPTIONS } from '@/types/github';
@@ -26,9 +27,9 @@ export function RoleManagementView() {
   const queryClient = useQueryClient();
 
   // Form state
-  const [newUsername, setNewUsername] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newUsernames, setNewUsernames] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('developer');
-  const [isAddingUser, setIsAddingUser] = useState(false);
 
   // Fetch user roles
   const { data: usersData, isLoading: isLoadingUsers } = useQuery({
@@ -48,28 +49,31 @@ export function RoleManagementView() {
     enabled: canManageRoles && !!token,
   });
 
-  // Add user mutation
-  const addUserMutation = useMutation({
-    mutationFn: async (data: { username: string; role: UserRole }) => {
-      const response = await fetch('/api/manage-user-role', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to add user');
+  // Add users mutation (can add multiple at once)
+  const addUsersMutation = useMutation({
+    mutationFn: async (users: Array<{ username: string; role: UserRole }>) => {
+      // Add users sequentially
+      for (const user of users) {
+        const response = await fetch('/api/manage-user-role', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(user)
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(`Error adding ${user.username}: ${error.error || 'Failed to add user'}`);
+        }
       }
-      return response.json();
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-roles'] });
-      setNewUsername('');
+      setNewUsernames('');
       setNewRole('developer');
-      setIsAddingUser(false);
+      setIsDialogOpen(false);
     },
   });
 
@@ -95,9 +99,24 @@ export function RoleManagementView() {
     },
   });
 
-  const handleAddUser = () => {
-    if (!newUsername.trim()) return;
-    addUserMutation.mutate({ username: newUsername.trim(), role: newRole });
+  const handleAddUsers = () => {
+    if (!newUsernames.trim()) return;
+
+    // Split by commas and trim whitespace
+    const usernames = newUsernames
+      .split(',')
+      .map(u => u.trim())
+      .filter(u => u.length > 0);
+
+    if (usernames.length === 0) return;
+
+    // Create array of users with the selected role
+    const users = usernames.map(username => ({
+      username,
+      role: newRole
+    }));
+
+    addUsersMutation.mutate(users);
   };
 
   const handleRemoveUser = (username: string) => {
@@ -243,68 +262,17 @@ export function RoleManagementView() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Listado de Usuarios</CardTitle>
-                <CardDescription>
-                  Usuarios configurados con roles de admin y developer
-                </CardDescription>
-              </div>
+              <CardTitle>Listado de Usuarios</CardTitle>
               <Button
-                onClick={() => setIsAddingUser(!isAddingUser)}
+                onClick={() => setIsDialogOpen(true)}
                 size="sm"
-                variant={isAddingUser ? "outline" : "default"}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                {isAddingUser ? 'Cancelar' : 'Agregar Usuario'}
+                Agregar Usuario
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {/* Add User Form */}
-            {isAddingUser && (
-              <div className="mb-4 p-4 border rounded-lg bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <Label htmlFor="username">Usuario de GitHub</Label>
-                    <Input
-                      id="username"
-                      placeholder="username"
-                      value={newUsername}
-                      onChange={(e) => setNewUsername(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddUser()}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Rol</Label>
-                    <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
-                      <SelectTrigger id="role">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="developer">Developer</SelectItem>
-                        <SelectItem value="guest">Guest</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      onClick={handleAddUser}
-                      disabled={!newUsername.trim() || addUserMutation.isPending}
-                      className="w-full"
-                    >
-                      {addUserMutation.isPending ? 'Agregando...' : 'Agregar'}
-                    </Button>
-                  </div>
-                </div>
-                {addUserMutation.error && (
-                  <p className="text-red-600 text-sm mt-2">
-                    Error: {addUserMutation.error.message}
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* Users List */}
             {isLoadingUsers ? (
               <p className="text-gray-500 text-center py-4">Cargando usuarios...</p>
@@ -358,6 +326,65 @@ export function RoleManagementView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Users Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Usuarios</DialogTitle>
+            <DialogDescription>
+              Ingresa uno o varios usuarios de GitHub separados por comas
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="usernames">Usuarios de GitHub</Label>
+              <Input
+                id="usernames"
+                placeholder="user1, user2, user3"
+                value={newUsernames}
+                onChange={(e) => setNewUsernames(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddUsers()}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Separa múltiples usuarios con comas
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="role-select">Rol</Label>
+              <Select value={newRole} onValueChange={(value) => setNewRole(value as UserRole)}>
+                <SelectTrigger id="role-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="developer">Developer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {addUsersMutation.error && (
+              <p className="text-red-600 text-sm">
+                {addUsersMutation.error.message}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={addUsersMutation.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddUsers}
+              disabled={!newUsernames.trim() || addUsersMutation.isPending}
+            >
+              {addUsersMutation.isPending ? 'Agregando...' : 'Agregar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
