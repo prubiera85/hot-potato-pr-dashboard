@@ -24,7 +24,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHelp, ...props }: AppSidebarProps) {
   const canAccessConfig = useHasPermission('canAccessConfig');
-  const canManageRoles = useHasPermission('canManageRoles');
   const canAccessGamification = useHasPermission('canAccessGamification');
 
   return (
@@ -113,18 +112,16 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
                     <span>Configuración</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                {canManageRoles && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      tooltip="Gestión de roles"
-                      isActive={currentView === 'roles'}
-                      onClick={() => onViewChange('roles')}
-                    >
-                      <Shield className="h-4 w-4" />
-                      <span>Gestión de Roles</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="Gestión de roles"
+                    isActive={currentView === 'roles'}
+                    onClick={() => onViewChange('roles')}
+                  >
+                    <Shield className="h-4 w-4" />
+                    <span>Gestión de Roles</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 {canAccessGamification && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
