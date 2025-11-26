@@ -1,4 +1,4 @@
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon, Settings } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import {
   DropdownMenu,
@@ -10,7 +10,11 @@ import {
 } from './ui/dropdown-menu';
 import { useAuthStore } from '../stores/authStore';
 
-export function UserMenu() {
+interface UserMenuProps {
+  onOpenConfig?: () => void;
+}
+
+export function UserMenu({ onOpenConfig }: UserMenuProps) {
   const { user, logout } = useAuthStore();
 
   if (!user) return null;
@@ -58,6 +62,12 @@ export function UserMenu() {
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Mi perfil</span>
         </DropdownMenuItem>
+        {onOpenConfig && (
+          <DropdownMenuItem onClick={onOpenConfig} className="cursor-pointer">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Configuración</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
           <LogOut className="mr-2 h-4 w-4" />

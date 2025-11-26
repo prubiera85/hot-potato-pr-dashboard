@@ -304,26 +304,8 @@ function AppContent() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            {/* Config Button - Now visible with auth */}
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setIsConfigOpen(true)}
-                    variant="secondary"
-                    size="icon"
-                    className="bg-amber-700 hover:bg-amber-800 text-white"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Configuración</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {/* User Menu */}
-            <UserMenu />
+            {/* User Menu with Config inside */}
+            <UserMenu onOpenConfig={() => setIsConfigOpen(true)} />
           </div>
         </div>
       </header>
