@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Selectores de Assignees y Reviewers**: Funcionalidad completa para gestionar asignaciones de PRs
+  - UserSelector component con búsqueda y multi-selección
+  - Optimistic updates para actualización instantánea de avatares
+  - Solo visible para usuarios con rol developer, admin o superadmin
+  - Excluye bots automáticamente
+  - Restricciones de GitHub respetadas (autor no puede ser reviewer)
+  - Check negro/gris oscuro para mejor visibilidad
+  - Actualización suave sin refresh de toda la lista
+  - Rollback automático en caso de error
 - **Sistema de roles de usuario**: Implementación completa de roles (superadmin, admin, developer, guest)
   - Backend: Gestión de roles mediante variable de entorno `USER_ROLES`
   - Frontend: Hooks `usePermissions`, `useHasPermission`, `useUserRole` y `useHasRole`

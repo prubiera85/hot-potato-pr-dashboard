@@ -556,8 +556,19 @@ Tarjeta individual de PR que muestra:
 - Tiempo abierta con icono de reloj
 - Labels de GitHub
 - Assignees y reviewers con avatares
-- Botones de "Urgente" y "Rápida" (**actualmente ocultos por CSS**)
+- **Selectores de Assignees y Reviewers** (solo para developer, admin, superadmin)
+- Botones de "Urgente" y "Rápida" (solo para developer, admin, superadmin)
 - Comentarios con tooltip descriptivo (desglose de comentarios generales vs código, filtrados sin bots)
+
+**Selectores de Assignees/Reviewers:**
+- Usa el componente `UserSelector` con búsqueda y multi-selección
+- Muestra check negro/gris oscuro (✓) para usuarios seleccionados
+- **Assignees**: Incluye al autor de la PR (puede asignarse a sí mismo)
+- **Reviewers**: Excluye al autor de la PR (restricción de GitHub) y excluye assignees actuales
+- Actualización instantánea mediante optimistic updates
+- Sin refresh de toda la lista (solo actualiza la PR específica)
+- Rollback automático en caso de error
+- Solo visible si el usuario tiene permiso `canManageAssignees`
 
 **Lógica de colores:**
 ```typescript
@@ -578,9 +589,17 @@ Componente raíz que maneja:
 - Modales (Config, Help, GIF)
 - Query de PRs y configuración
 - Mutaciones para toggle de urgent/quick
-- Header con botones de ayuda y configuración (**botón de configuración oculto por CSS**)
+- **Mutaciones para assignees/reviewers con optimistic updates**
+- Header con botones de ayuda y configuración
 - Versionado dinámico desde package.json
 - Console log con estilo y emoji de patata
+
+**Optimistic Updates para Assignees/Reviewers:**
+- `onMutate`: Actualiza inmediatamente la UI antes de la respuesta de la API
+- `onSuccess`: Mantiene el cambio optimista (NO invalida queries)
+- `onError`: Rollback automático al estado anterior
+- QueryKey consistente: `['prs', isTestMode]` en todos los lugares
+- Console logs con emojis para debugging (🔄 📸 🎯 ➕ ➖ ✅ ❌)
 
 ## Características Clave
 
@@ -713,8 +732,32 @@ mcp__shadcn__getComponent({ component: "button" })
 Las funciones de Netlify se conectan a la API de GitHub para:
 - Obtener PRs de repositorios configurados
 - Obtener colaboradores de repos
+- **Gestionar assignees de PRs** (`/api/assign-assignees`)
+- **Gestionar reviewers de PRs** (`/api/assign-reviewers`)
 - Actualizar labels de PRs (urgent/quick)
 - Obtener comentarios individuales y filtrarlos (excluye bots y Linear bot)
+
+**Funciones Serverless para Assignees/Reviewers:**
+
+#### `/api/collaborators` (GET)
+Obtiene lista de colaboradores del repositorio:
+- Combina colaboradores, contribuidores y miembros de organización
+- Excluye usuarios específicos configurados
+- Excluye bots automáticamente
+- Retorna datos simplificados: `{ id, login, avatar_url }`
+
+#### `/api/assign-assignees` (POST)
+Gestiona assignees de una PR:
+- Parámetros: `owner`, `repo`, `pull_number`, `assignees` (array de logins), `action` ('add' | 'remove')
+- Usa `issues.addAssignees()` o `issues.removeAssignees()`
+- Retorna éxito o error
+
+#### `/api/assign-reviewers` (POST)
+Gestiona reviewers de una PR:
+- Parámetros: `owner`, `repo`, `pull_number`, `reviewers` (array de logins), `action` ('add' | 'remove')
+- Usa `pulls.requestReviewers()` o `pulls.removeRequestedReviewers()`
+- **Restricción**: No permite agregar al autor de la PR como reviewer (restricción de GitHub)
+- Retorna éxito o error
 
 **Lógica de Reviewers:**
 - `requested_reviewers`: Reviewers solicitados que **aún NO han revisado** (se quitan automáticamente al completar review)

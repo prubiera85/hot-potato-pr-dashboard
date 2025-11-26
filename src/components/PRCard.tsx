@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useHasPermission } from '@/hooks/usePermissions';
+import { UserSelector } from '@/components/ui/user-selector';
 
 interface Collaborator {
   id: number;
@@ -22,11 +23,54 @@ interface PRCardProps {
   maxDaysOpen: number;
   collaborators?: Collaborator[];
   onPRUpdated?: () => void;
+  onToggleAssignee?: (pr: EnhancedPR, userId: number) => Promise<void>;
+  onToggleReviewer?: (pr: EnhancedPR, userId: number) => Promise<void>;
+  isProcessingAssignees?: boolean;
+  isProcessingReviewers?: boolean;
 }
 
-export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: PRCardProps) {
+export function PRCard({
+  pr,
+  onToggleUrgent,
+  onToggleQuick,
+  isProcessingUrgent,
+  isProcessingQuick,
+  maxDaysOpen,
+  collaborators = [],
+  onToggleAssignee,
+  onToggleReviewer,
+  isProcessingAssignees = false,
+  isProcessingReviewers = false
+}: PRCardProps) {
   // Check permissions
   const canToggleUrgentQuick = useHasPermission('canToggleUrgentQuick');
+  const canManageAssignments = useHasPermission('canManageAssignees');
+
+  // Handlers for assignee/reviewer changes
+  const handleToggleAssignee = async (userId: number) => {
+    if (onToggleAssignee) {
+      await onToggleAssignee(pr, userId);
+    }
+  };
+
+  const handleToggleReviewer = async (userId: number) => {
+    if (onToggleReviewer) {
+      await onToggleReviewer(pr, userId);
+    }
+  };
+
+  // Calculate available users for assignees (only exclude bots, allow PR author)
+  const availableUsers = collaborators.filter(
+    (user) => user.login.toLowerCase().indexOf('[bot]') === -1
+  );
+
+  // Available reviewers exclude PR author (GitHub restriction), bots, and current assignees
+  const availableReviewers = collaborators.filter(
+    (user) =>
+      user.id !== pr.user.id && // Exclude PR author
+      user.login.toLowerCase().indexOf('[bot]') === -1 && // Exclude bots
+      !pr.assignees.some((assignee) => assignee.id === user.id) // Exclude current assignees
+  );
 
   // Calculate visual status
   const hasAssignee = !pr.missingAssignee;
@@ -160,8 +204,7 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
           {/* Right sidebar - Assignment section */}
           <div className="w-64 flex-shrink-0 border-l border-gray-200 pl-4">
             {/* Assignees Section */}
-            {/* <div className="mb-6"> */}
-            <div className="mb-2">
+            <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-gray-600" />
@@ -187,20 +230,23 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                 )}
               </div>
 
-              {/* <div>
-                {isAssigningAssignees ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Actualizando...</span>
-                  </div>
-                ) : (
-                  <UserSelector
-                    availableUsers={availableUsers}
-                    selectedUserIds={pr.assignees.map(a => a.id)}
-                    onToggleUser={handleToggleAssignee}
-                  />
-                )}
-              </div> */}
+              {canManageAssignments && (
+                <div>
+                  {isProcessingAssignees ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Actualizando...</span>
+                    </div>
+                  ) : (
+                    <UserSelector
+                      availableUsers={availableUsers}
+                      selectedUserIds={pr.assignees.map(a => a.id)}
+                      onToggleUser={handleToggleAssignee}
+                      placeholder="Asignar usuarios..."
+                    />
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Reviewers Section */}
@@ -242,23 +288,23 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                 )}
               </div>
 
-              {/* <div>
-                {isAssigningReviewers ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Actualizando...</span>
-                  </div>
-                ) : (
-                  <UserSelector
-                    availableUsers={availableReviewers}
-                    selectedUserIds={pr.requested_reviewers.map(r => r.id)}
-                    onToggleUser={handleToggleReviewer}
-                  />
-                )}
-              </div> */}
-
-
-
+              {canManageAssignments && (
+                <div>
+                  {isProcessingReviewers ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Actualizando...</span>
+                    </div>
+                  ) : (
+                    <UserSelector
+                      availableUsers={availableReviewers}
+                      selectedUserIds={pr.requested_reviewers.map(r => r.id)}
+                      onToggleUser={handleToggleReviewer}
+                      placeholder="Asignar reviewers..."
+                    />
+                  )}
+                </div>
+              )}
             </div>
             {/* Botones de urgente y rápida Section - Solo visible para developer, admin y superadmin */}
             {canToggleUrgentQuick && (

@@ -121,7 +121,7 @@ function AppContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config'] });
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+      queryClient.invalidateQueries({ queryKey: ['prs', isTestMode] });
     },
   });
 
@@ -158,7 +158,7 @@ function AppContent() {
       return response.json();
     },
     onSuccess: (_, pr) => {
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+      queryClient.invalidateQueries({ queryKey: ['prs', isTestMode] });
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -206,7 +206,7 @@ function AppContent() {
       return response.json();
     },
     onSuccess: (_, pr) => {
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+      queryClient.invalidateQueries({ queryKey: ['prs', isTestMode] });
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -219,6 +219,215 @@ function AppContent() {
       setProcessingPRs(prev => {
         const next = new Set(prev);
         next.delete(`${prKey}-quick`);
+        return next;
+      });
+    },
+  });
+
+  // Toggle assignee mutation
+  const toggleAssigneeMutation = useMutation({
+    mutationFn: async ({ pr, userId, userLogin }: { pr: EnhancedPR; userId: number; userLogin: string; avatarUrl: string }) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => new Set(prev).add(`${prKey}-assignees`));
+
+      if (isTestMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return { success: true };
+      }
+
+      // Determine if we're adding or removing
+      const isCurrentlyAssigned = pr.assignees.some(a => a.id === userId);
+      const action = isCurrentlyAssigned ? 'remove' : 'add';
+
+      const response = await fetch('/api/assign-assignees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: pr.repo.owner,
+          repo: pr.repo.name,
+          pull_number: pr.number,
+          assignees: [userLogin],
+          action,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update assignees');
+      }
+      return response.json();
+    },
+    onMutate: async ({ pr, userId, userLogin, avatarUrl }) => {
+      console.log('🔄 [Assignee Mutation] onMutate called', { prId: pr.id, userId, userLogin });
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+      console.log('📸 [Assignee Mutation] Previous data snapshot taken');
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) {
+          console.log('❌ [Assignee Mutation] No old data found');
+          return old;
+        }
+
+        const isCurrentlyAssigned = pr.assignees.some(a => a.id === userId);
+        console.log('🎯 [Assignee Mutation] isCurrentlyAssigned:', isCurrentlyAssigned);
+
+        const updated = {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              let newAssignees;
+              if (isCurrentlyAssigned) {
+                // Remove assignee
+                newAssignees = p.assignees.filter(a => a.id !== userId);
+                console.log('➖ [Assignee Mutation] Removing assignee, new count:', newAssignees.length);
+              } else {
+                // Add assignee
+                newAssignees = [...p.assignees, { id: userId, login: userLogin, avatar_url: avatarUrl, html_url: `https://github.com/${userLogin}` }];
+                console.log('➕ [Assignee Mutation] Adding assignee, new count:', newAssignees.length);
+              }
+
+              return {
+                ...p,
+                assignees: newAssignees,
+                missingAssignee: newAssignees.length === 0,
+              };
+            }
+            return p;
+          }),
+        };
+
+        console.log('✅ [Assignee Mutation] Data updated optimistically');
+        return updated;
+      });
+
+      return { previousPRs };
+    },
+    onSuccess: (_, { pr }) => {
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Assignee Mutation] Success - keeping optimistic update');
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-assignees`);
+        return next;
+      });
+    },
+    onError: (_, { pr }, context) => {
+      // Rollback on error
+      console.log('❌ [Assignee Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-assignees`);
+        return next;
+      });
+    },
+  });
+
+  // Toggle reviewer mutation
+  const toggleReviewerMutation = useMutation({
+    mutationFn: async ({ pr, userId, userLogin }: { pr: EnhancedPR; userId: number; userLogin: string; avatarUrl: string }) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => new Set(prev).add(`${prKey}-reviewers`));
+
+      if (isTestMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return { success: true };
+      }
+
+      // Determine if we're adding or removing
+      const isCurrentlyReviewer = pr.requested_reviewers.some(r => r.id === userId);
+      const action = isCurrentlyReviewer ? 'remove' : 'add';
+
+      const response = await fetch('/api/assign-reviewers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: pr.repo.owner,
+          repo: pr.repo.name,
+          pull_number: pr.number,
+          reviewers: [userLogin],
+          action,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update reviewers');
+      }
+      return response.json();
+    },
+    onMutate: async ({ pr, userId, userLogin, avatarUrl }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) return old;
+
+        const isCurrentlyReviewer = pr.requested_reviewers.some(r => r.id === userId);
+
+        return {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              let newReviewers;
+              if (isCurrentlyReviewer) {
+                // Remove reviewer
+                newReviewers = p.requested_reviewers.filter(r => r.id !== userId);
+              } else {
+                // Add reviewer
+                newReviewers = [...p.requested_reviewers, { id: userId, login: userLogin, avatar_url: avatarUrl, html_url: `https://github.com/${userLogin}` }];
+              }
+
+              const reviewerCount = newReviewers.length + (p.requested_teams?.length || 0);
+
+              return {
+                ...p,
+                requested_reviewers: newReviewers,
+                reviewerCount,
+                missingReviewer: reviewerCount === 0,
+              };
+            }
+            return p;
+          }),
+        };
+      });
+
+      return { previousPRs };
+    },
+    onSuccess: (_, { pr }) => {
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Reviewer Mutation] Success - keeping optimistic update');
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-reviewers`);
+        return next;
+      });
+    },
+    onError: (_, { pr }, context) => {
+      // Rollback on error
+      console.log('❌ [Reviewer Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-reviewers`);
         return next;
       });
     },
@@ -361,6 +570,14 @@ function AppContent() {
                 isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
                 maxDaysOpen={config.maxDaysOpen}
                 configuredRepositories={config.repositories}
+                onToggleAssignee={async (pr, userId, userLogin, avatarUrl) => {
+                  await toggleAssigneeMutation.mutateAsync({ pr, userId, userLogin, avatarUrl });
+                }}
+                onToggleReviewer={async (pr, userId, userLogin, avatarUrl) => {
+                  await toggleReviewerMutation.mutateAsync({ pr, userId, userLogin, avatarUrl });
+                }}
+                isProcessingAssignees={(pr) => processingPRs.has(`${getPRKey(pr)}-assignees`)}
+                isProcessingReviewers={(pr) => processingPRs.has(`${getPRKey(pr)}-reviewers`)}
               />
             )}
             {currentView === 'my-prs' && <MyPRsView />}
