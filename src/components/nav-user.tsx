@@ -28,6 +28,9 @@ import {
   useSidebar,
 } from "./ui/sidebar"
 import { useAuthStore } from '../stores/authStore';
+import { useHasPermission } from '@/hooks/usePermissions';
+import { Badge } from './ui/badge';
+import { ROLE_DESCRIPTIONS } from '@/types/github';
 
 interface NavUserProps {
   onOpenConfig?: () => void;
@@ -36,6 +39,7 @@ interface NavUserProps {
 export function NavUser({ onOpenConfig }: NavUserProps) {
   const { isMobile } = useSidebar()
   const { user, logout } = useAuthStore();
+  const canAccessConfig = useHasPermission('canAccessConfig');
 
   if (!user) return null;
 
@@ -53,6 +57,22 @@ export function NavUser({ onOpenConfig }: NavUserProps) {
         .slice(0, 2)
     : user.login.slice(0, 2).toUpperCase();
 
+  const roleInfo = ROLE_DESCRIPTIONS[user.role];
+  const getRoleBadgeColor = () => {
+    switch (user.role) {
+      case 'superadmin':
+        return 'bg-purple-600 text-white hover:bg-purple-700';
+      case 'admin':
+        return 'bg-blue-600 text-white hover:bg-blue-700';
+      case 'developer':
+        return 'bg-green-600 text-white hover:bg-green-700';
+      case 'guest':
+        return 'bg-gray-400 text-white hover:bg-gray-500';
+      default:
+        return 'bg-gray-400 text-white hover:bg-gray-500';
+    }
+  };
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -68,7 +88,9 @@ export function NavUser({ onOpenConfig }: NavUserProps) {
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name || user.login}</span>
-                <span className="truncate text-xs">@{user.login}</span>
+                <div className="flex items-center gap-1">
+                  <span className="truncate text-xs">@{user.login}</span>
+                </div>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -88,6 +110,9 @@ export function NavUser({ onOpenConfig }: NavUserProps) {
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name || user.login}</span>
                   <span className="truncate text-xs">{user.email || `@${user.login}`}</span>
+                  <Badge className={`text-xs mt-1 w-fit ${getRoleBadgeColor()}`}>
+                    {roleInfo.name}
+                  </Badge>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -97,7 +122,7 @@ export function NavUser({ onOpenConfig }: NavUserProps) {
                 <BadgeCheck className="mr-2 h-4 w-4" />
                 Mi perfil
               </DropdownMenuItem>
-              {onOpenConfig && (
+              {canAccessConfig && onOpenConfig && (
                 <DropdownMenuItem onClick={onOpenConfig}>
                   <Settings className="mr-2 h-4 w-4" />
                   Configuración

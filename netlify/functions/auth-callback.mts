@@ -1,5 +1,5 @@
 import type { Context } from '@netlify/functions';
-import { generateToken, isUserAllowed, type UserPayload } from './auth/jwt.mts';
+import { generateToken, isUserAllowed, getUserRole, type UserPayload } from './auth/jwt.mts';
 
 /**
  * Handles GitHub OAuth callback
@@ -99,19 +99,23 @@ export default async (request: Request, context: Context) => {
       );
     }
 
-    // Step 4: Create user payload
+    // Step 4: Get user role based on configuration
+    const role = getUserRole(githubUser.login);
+
+    // Step 5: Create user payload
     const user: UserPayload = {
       login: githubUser.login,
       id: githubUser.id,
       avatar_url: githubUser.avatar_url,
       email: githubUser.email,
       name: githubUser.name,
+      role,
     };
 
-    // Step 5: Generate JWT token
+    // Step 6: Generate JWT token
     const token = generateToken(user);
 
-    // Step 6: Return token and user info
+    // Step 7: Return token and user info
     return new Response(
       JSON.stringify({
         token,

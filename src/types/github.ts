@@ -76,3 +76,80 @@ export interface DashboardConfig {
 
 export type SortOption = 'time-open-desc' | 'time-open-asc';
 export type FilterOption = 'all' | 'urgent' | 'unassigned' | 'quick' | 'missing-assignee' | 'missing-reviewer';
+
+// User roles
+export type UserRole = 'superadmin' | 'admin' | 'developer' | 'guest';
+
+export interface UserPermissions {
+  canViewDashboard: boolean;           // Todos pueden ver
+  canToggleUrgentQuick: boolean;       // developer, admin, superadmin
+  canManageAssignees: boolean;         // developer, admin, superadmin
+  canAccessConfig: boolean;            // admin, superadmin
+  canManageRepositories: boolean;      // admin, superadmin
+  canManageRoles: boolean;             // solo superadmin
+}
+
+export interface RoleConfig {
+  name: string;
+  description: string;
+  permissions: UserPermissions;
+}
+
+// Role configurations
+export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
+  superadmin: {
+    canViewDashboard: true,
+    canToggleUrgentQuick: true,
+    canManageAssignees: true,
+    canAccessConfig: true,
+    canManageRepositories: true,
+    canManageRoles: true,
+  },
+  admin: {
+    canViewDashboard: true,
+    canToggleUrgentQuick: true,
+    canManageAssignees: true,
+    canAccessConfig: true,
+    canManageRepositories: true,
+    canManageRoles: false,
+  },
+  developer: {
+    canViewDashboard: true,
+    canToggleUrgentQuick: true,
+    canManageAssignees: true,
+    canAccessConfig: false,
+    canManageRepositories: false,
+    canManageRoles: false,
+  },
+  guest: {
+    canViewDashboard: true,
+    canToggleUrgentQuick: false,
+    canManageAssignees: false,
+    canAccessConfig: false,
+    canManageRepositories: false,
+    canManageRoles: false,
+  },
+};
+
+export const ROLE_DESCRIPTIONS: Record<UserRole, RoleConfig> = {
+  superadmin: {
+    name: 'Super Admin',
+    description: 'Acceso completo a todas las funcionalidades incluyendo gestión de roles',
+    permissions: ROLE_PERMISSIONS.superadmin,
+  },
+  admin: {
+    name: 'Admin',
+    description: 'Acceso a configuraciones de repositorios y todas las opciones de developer',
+    permissions: ROLE_PERMISSIONS.admin,
+  },
+  developer: {
+    name: 'Developer',
+    description: 'Puede ver y editar PRs (urgente/rápida, assignees, reviewers)',
+    permissions: ROLE_PERMISSIONS.developer,
+  },
+  guest: {
+    name: 'Guest',
+    description: 'Solo visualización de PRs sin permisos de edición',
+    permissions: ROLE_PERMISSIONS.guest,
+  },
+};

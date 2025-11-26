@@ -5,6 +5,7 @@ import { AvatarGroup, AvatarGroupTooltip } from '@/components/ui/shadcn-io/avata
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useHasPermission } from '@/hooks/usePermissions';
 
 interface Collaborator {
   id: number;
@@ -24,6 +25,9 @@ interface PRCardProps {
 }
 
 export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, isProcessingQuick, maxDaysOpen }: PRCardProps) {
+  // Check permissions
+  const canToggleUrgentQuick = useHasPermission('canToggleUrgentQuick');
+
   // Calculate visual status
   const hasAssignee = !pr.missingAssignee;
   const daysOpen = pr.hoursOpen / 24;
@@ -256,60 +260,61 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
 
 
             </div>
-            {/* Botones de urgente y rápida Section */}
+            {/* Botones de urgente y rápida Section - Solo visible para developer, admin y superadmin */}
+            {canToggleUrgentQuick && (
+              <div className="flex gap-2">
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onToggleUrgent(pr)}
+                        disabled={isProcessingUrgent}
+                        variant={pr.isUrgent ? "destructive" : "outline"}
+                        size="sm"
+                      >
+                        {isProcessingUrgent ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <>
+                            <Flame fill={pr.isUrgent ? 'currentColor' : 'none'} />
+                            <span>Urgente</span>
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
-            <div className="flex gap-2">
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => onToggleUrgent(pr)}
-                      disabled={isProcessingUrgent}
-                      variant={pr.isUrgent ? "destructive" : "outline"}
-                      size="sm"
-                    >
-                      {isProcessingUrgent ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <>
-                          <Flame fill={pr.isUrgent ? 'currentColor' : 'none'} />
-                          <span>Urgente</span>
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={() => onToggleQuick(pr)}
-                      disabled={isProcessingQuick}
-                      variant={pr.isQuick ? "default" : "outline"}
-                      size="sm"
-                      className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-                    >
-                      {isProcessingQuick ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <>
-                          <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />
-                          <span>Rápida</span>
-                        </>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => onToggleQuick(pr)}
+                        disabled={isProcessingQuick}
+                        variant={pr.isQuick ? "default" : "outline"}
+                        size="sm"
+                        className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                      >
+                        {isProcessingQuick ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <>
+                            <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />
+                            <span>Rápida</span>
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
           </div>
           
         </div>

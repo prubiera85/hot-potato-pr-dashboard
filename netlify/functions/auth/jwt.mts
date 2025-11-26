@@ -1,16 +1,44 @@
 import jwt from 'jsonwebtoken';
 
+export type UserRole = 'superadmin' | 'admin' | 'developer' | 'guest';
+
 export interface UserPayload {
   login: string;
   id: number;
   avatar_url: string;
   email: string | null;
   name: string | null;
+  role: UserRole;
 }
 
 export interface JWTPayload extends UserPayload {
   iat: number;
   exp: number;
+}
+
+// User roles mapping - stored as environment variable
+// Format: username1:role1,username2:role2
+// Example: prubiera:superadmin,john:admin,jane:developer
+export function getUserRole(login: string): UserRole {
+  const rolesConfig = Netlify.env.get('USER_ROLES');
+
+  if (!rolesConfig) {
+    // If no roles configured, everyone is guest by default
+    return 'guest';
+  }
+
+  const rolesMap = new Map<string, UserRole>();
+
+  // Parse the roles configuration
+  rolesConfig.split(',').forEach(entry => {
+    const [username, role] = entry.split(':').map(s => s.trim().toLowerCase());
+    if (username && role) {
+      rolesMap.set(username, role as UserRole);
+    }
+  });
+
+  // Return the user's role or default to guest
+  return rolesMap.get(login.toLowerCase()) || 'guest';
 }
 
 /**

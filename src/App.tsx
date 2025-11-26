@@ -8,6 +8,7 @@ import { AuthCallback } from './components/AuthCallback';
 import { MyPRsView } from './components/MyPRsView';
 import { TeamView } from './components/TeamView';
 import { AppSidebar } from './components/app-sidebar';
+import { RoleManagement } from './components/RoleManagement';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/sidebar';
 import {
   Breadcrumb,
@@ -39,6 +40,7 @@ function AppContent() {
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
   const [processingPRs, setProcessingPRs] = useState<Set<string>>(new Set());
   const [isVerifyingSession, setIsVerifyingSession] = useState(true);
 
@@ -283,6 +285,7 @@ function AppContent() {
         onOpenConfig={() => setIsConfigOpen(true)}
         onOpenGifModal={() => setIsGifModalOpen(true)}
         onOpenHelp={() => setIsHelpModalOpen(true)}
+        onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -488,6 +491,12 @@ function AppContent() {
           </div>
         </div>
       )}
+
+      {/* Role Management Modal - Solo para superadmin */}
+      <RoleManagement
+        open={isRoleManagementOpen}
+        onClose={() => setIsRoleManagementOpen(false)}
+      />
     </SidebarProvider>
   );
 }

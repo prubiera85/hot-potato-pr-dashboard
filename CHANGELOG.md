@@ -7,9 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Sistema de roles de usuario**: Implementación completa de roles (superadmin, admin, developer, guest)
+  - Backend: Gestión de roles mediante variable de entorno `USER_ROLES`
+  - Frontend: Hooks `usePermissions`, `useHasPermission`, `useUserRole` y `useHasRole`
+  - Permisos granulares por rol:
+    - **Superadmin**: Acceso completo incluyendo gestión de roles
+    - **Admin**: Configuración de repositorios + permisos de developer
+    - **Developer**: Ver y editar PRs (urgente/rápida, assignees/reviewers)
+    - **Guest**: Solo visualización (sin edición)
+- **Interfaz de gestión de roles**: Panel de administración para superadmins
+  - Vista completa de roles y permisos
+  - Instrucciones para configurar roles mediante Netlify CLI
+  - Accesible desde el sidebar (botón solo visible para superadmins)
+- **Badge de rol en perfil de usuario**: Muestra el rol actual con colores distintivos
+  - Purple (superadmin), Blue (admin), Green (developer), Gray (guest)
+
 ### Changed
 - **Acceso abierto habilitado**: Se eliminó la restricción de whitelist, ahora cualquier usuario con cuenta de GitHub puede hacer login
-- Documentación actualizada en CLAUDE.md para reflejar el modo de acceso abierto
+- **Botones de urgente/rápida**: Ahora solo visibles para developer, admin y superadmin
+- **Botón de configuración**: Ahora solo visible para admin y superadmin
+- Documentación actualizada en CLAUDE.md para reflejar el modo de acceso abierto y sistema de roles
+- JWT ahora incluye el campo `role` del usuario
 
 ## [2.0.0] - 2025-01-26
 

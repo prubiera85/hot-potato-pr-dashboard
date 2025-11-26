@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { UserRole, UserPermissions } from '../types/github';
+import { ROLE_PERMISSIONS } from '../types/github';
 
 export interface User {
   login: string;
@@ -7,29 +9,35 @@ export interface User {
   avatar_url: string;
   email: string | null;
   name: string | null;
+  role: UserRole;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  permissions: UserPermissions | null;
   login: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (user: User) => void;
+  getPermissions: () => UserPermissions;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
+      permissions: null,
 
       login: (token: string, user: User) => {
+        const permissions = ROLE_PERMISSIONS[user.role];
         set({
           token,
           user,
           isAuthenticated: true,
+          permissions,
         });
       },
 
@@ -38,11 +46,21 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           user: null,
           isAuthenticated: false,
+          permissions: null,
         });
       },
 
       updateUser: (user: User) => {
-        set({ user });
+        const permissions = ROLE_PERMISSIONS[user.role];
+        set({ user, permissions });
+      },
+
+      getPermissions: () => {
+        const state = get();
+        if (!state.user) {
+          return ROLE_PERMISSIONS.guest; // Fallback to guest permissions
+        }
+        return ROLE_PERMISSIONS[state.user.role];
       },
     }),
     {

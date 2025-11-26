@@ -1,4 +1,4 @@
-import { LayoutGrid, User, Users, HelpCircle } from 'lucide-react';
+import { LayoutGrid, User, Users, HelpCircle, Shield } from 'lucide-react';
 import { NavUser } from './nav-user';
 import {
   Sidebar,
@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from './ui/sidebar';
+import { useHasPermission } from '@/hooks/usePermissions';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   currentView: string;
@@ -20,9 +21,11 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onOpenConfig: () => void;
   onOpenGifModal: () => void;
   onOpenHelp: () => void;
+  onOpenRoleManagement: () => void;
 }
 
-export function AppSidebar({ currentView, onViewChange, onOpenConfig, onOpenGifModal, onOpenHelp, ...props }: AppSidebarProps) {
+export function AppSidebar({ currentView, onViewChange, onOpenConfig, onOpenGifModal, onOpenHelp, onOpenRoleManagement, ...props }: AppSidebarProps) {
+  const canManageRoles = useHasPermission('canManageRoles');
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
@@ -107,6 +110,17 @@ export function AppSidebar({ currentView, onViewChange, onOpenConfig, onOpenGifM
               <span>Leyenda de colores</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          {canManageRoles && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={onOpenRoleManagement}
+                tooltip="Gestión de roles"
+              >
+                <Shield className="h-4 w-4 text-purple-600" />
+                <span>Gestión de roles</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
         <NavUser onOpenConfig={onOpenConfig} />
       </SidebarFooter>
