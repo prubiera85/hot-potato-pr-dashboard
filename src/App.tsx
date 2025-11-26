@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tanstack/react-query';
 import { Clock } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
-import { ConfigPanel } from './components/ConfigPanel';
+import { ConfigView } from './components/ConfigView';
 import { LoginScreen } from './components/LoginScreen';
 import { AuthCallback } from './components/AuthCallback';
 import { MyPRsView } from './components/MyPRsView';
 import { TeamView } from './components/TeamView';
+import { RoleManagementView } from './components/RoleManagementView';
 import { AppSidebar } from './components/app-sidebar';
-import { RoleManagement } from './components/RoleManagement';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/sidebar';
 import {
   Breadcrumb,
@@ -35,12 +35,10 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { isAuthenticated, token, user, logout } = useAuthStore();
-  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team'>('all');
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team' | 'config' | 'roles'>('all');
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
   const [processingPRs, setProcessingPRs] = useState<Set<string>>(new Set());
   const [isVerifyingSession, setIsVerifyingSession] = useState(true);
 
@@ -281,11 +279,9 @@ function AppContent() {
     <SidebarProvider>
       <AppSidebar
         currentView={currentView}
-        onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team')}
-        onOpenConfig={() => setIsConfigOpen(true)}
+        onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team' | 'config' | 'roles')}
         onOpenGifModal={() => setIsGifModalOpen(true)}
         onOpenHelp={() => setIsHelpModalOpen(true)}
-        onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -295,7 +291,9 @@ function AppContent() {
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink className="cursor-pointer">
-                    {(currentView === 'all' || currentView === 'my-prs') ? 'Pull Requests' : 'Equipo'}
+                    {(currentView === 'all' || currentView === 'my-prs') && 'Pull Requests'}
+                    {currentView === 'team' && 'Equipo'}
+                    {(currentView === 'config' || currentView === 'roles') && 'Admin'}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -304,6 +302,8 @@ function AppContent() {
                     {currentView === 'all' && 'Todas las PRs'}
                     {currentView === 'my-prs' && 'Mis PRs'}
                     {currentView === 'team' && 'Vista por Usuario'}
+                    {currentView === 'config' && 'Configuración'}
+                    {currentView === 'roles' && 'Gestión de Roles'}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -363,6 +363,16 @@ function AppContent() {
             )}
             {currentView === 'my-prs' && <MyPRsView />}
             {currentView === 'team' && <TeamView />}
+            {currentView === 'config' && (
+              <ConfigView
+                config={config}
+                onSave={(newConfig) => saveConfigMutation.mutate(newConfig)}
+                isSaving={saveConfigMutation.isPending}
+                isTestMode={isTestMode}
+                onTestModeChange={setIsTestMode}
+              />
+            )}
+            {currentView === 'roles' && <RoleManagementView />}
           </>
         )}
 
@@ -374,17 +384,6 @@ function AppContent() {
         </footer>
       </main>
       </SidebarInset>
-
-      {/* Config Modal */}
-      <ConfigPanel
-        isOpen={isConfigOpen}
-        onClose={() => setIsConfigOpen(false)}
-        config={config}
-        onSave={(newConfig) => saveConfigMutation.mutate(newConfig)}
-        isSaving={saveConfigMutation.isPending}
-        isTestMode={isTestMode}
-        onTestModeChange={setIsTestMode}
-      />
 
       {/* Help Modal */}
       {isHelpModalOpen && (
@@ -491,12 +490,6 @@ function AppContent() {
           </div>
         </div>
       )}
-
-      {/* Role Management Modal - Solo para superadmin */}
-      <RoleManagement
-        open={isRoleManagementOpen}
-        onClose={() => setIsRoleManagementOpen(false)}
-      />
     </SidebarProvider>
   );
 }

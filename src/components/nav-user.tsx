@@ -4,7 +4,6 @@ import {
   BadgeCheck,
   ChevronsUpDown,
   LogOut,
-  Settings,
 } from "lucide-react"
 
 import {
@@ -28,18 +27,12 @@ import {
   useSidebar,
 } from "./ui/sidebar"
 import { useAuthStore } from '../stores/authStore';
-import { useHasPermission } from '@/hooks/usePermissions';
 import { Badge } from './ui/badge';
 import { ROLE_DESCRIPTIONS } from '@/types/github';
 
-interface NavUserProps {
-  onOpenConfig?: () => void;
-}
-
-export function NavUser({ onOpenConfig }: NavUserProps) {
+export function NavUser() {
   const { isMobile } = useSidebar()
   const { user, logout } = useAuthStore();
-  const canAccessConfig = useHasPermission('canAccessConfig');
 
   if (!user) return null;
 
@@ -122,12 +115,6 @@ export function NavUser({ onOpenConfig }: NavUserProps) {
                 <BadgeCheck className="mr-2 h-4 w-4" />
                 Mi perfil
               </DropdownMenuItem>
-              {canAccessConfig && onOpenConfig && (
-                <DropdownMenuItem onClick={onOpenConfig}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Configuración
-                </DropdownMenuItem>
-              )}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-red-600">

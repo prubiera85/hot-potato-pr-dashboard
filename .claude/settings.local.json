@@ -39,7 +39,8 @@
       "Bash(npm run start)",
       "Bash(git branch:*)",
       "WebFetch(domain:ui.shadcn.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(netlify env:unset:*)"
     ],
     "deny": [],
     "ask": []
