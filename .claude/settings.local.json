@@ -31,7 +31,12 @@
       "Bash(npx shadcn@latest add:*)",
       "WebFetch(domain:www.shadcn.io)",
       "mcp__shadcn__getComponent",
-      "mcp__shadcn__getComponents"
+      "mcp__shadcn__getComponents",
+      "Bash(git restore:*)",
+      "Bash(cat:*)",
+      "Bash(netlify env:list:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run start)"
     ],
     "deny": [],
     "ask": []

@@ -267,7 +267,6 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                       disabled={isProcessingUrgent}
                       variant={pr.isUrgent ? "destructive" : "outline"}
                       size="sm"
-                      className="urgent-button-hidden"
                     >
                       {isProcessingUrgent ? (
                         <Loader2 className="animate-spin" />
@@ -293,7 +292,7 @@ export function PRCard({ pr, onToggleUrgent, onToggleQuick, isProcessingUrgent, 
                       disabled={isProcessingQuick}
                       variant={pr.isQuick ? "default" : "outline"}
                       size="sm"
-                      className={`quick-button-hidden ${pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}`}
+                      className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
                     >
                       {isProcessingQuick ? (
                         <Loader2 className="animate-spin" />

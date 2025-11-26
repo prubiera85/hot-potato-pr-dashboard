@@ -3,10 +3,15 @@ import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tansta
 import { Settings, BookOpen, Clock } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { ConfigPanel } from './components/ConfigPanel';
+import { LoginScreen } from './components/LoginScreen';
+import { AuthCallback } from './components/AuthCallback';
+import { UserMenu } from './components/UserMenu';
 import { Button } from './components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs, dummyRepositories } from './utils/dummyData';
+import { useAuthStore } from './stores/authStore';
+import { verifySession } from './utils/auth';
 import packageJson from '../package.json';
 
 const queryClient = new QueryClient({
@@ -19,11 +24,13 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
+  const { isAuthenticated, token, user, logout } = useAuthStore();
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [processingPRs, setProcessingPRs] = useState<Set<string>>(new Set());
+  const [isVerifyingSession, setIsVerifyingSession] = useState(true);
 
   // Show version in console on load
   useEffect(() => {
@@ -33,6 +40,22 @@ function AppContent() {
       ''
     );
   }, []);
+
+  // Verify session on mount
+  useEffect(() => {
+    const verify = async () => {
+      if (token && !user) {
+        // We have a token but no user, verify it
+        const verifiedUser = await verifySession(token);
+        if (!verifiedUser) {
+          // Token is invalid, logout
+          logout();
+        }
+      }
+      setIsVerifyingSession(false);
+    };
+    verify();
+  }, [token, user, logout]);
 
   // Fetch PRs and config
   const {
@@ -199,6 +222,49 @@ function AppContent() {
 
   const hasError = !isTestMode && prsData?.error;
 
+  // Check if we're handling OAuth callback
+  const urlParams = new URLSearchParams(window.location.search);
+  const isCallback = urlParams.has('code') || urlParams.has('error');
+
+  // Show loading while verifying session
+  if (isVerifyingSession) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 mx-auto mb-4">
+            <svg viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+          <p className="text-gray-600">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle OAuth callback
+  if (isCallback) {
+    return <AuthCallback onSuccess={() => window.location.href = '/'} />;
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="shadow" style={{ backgroundColor: '#ffeb9e' }}>
@@ -238,7 +304,7 @@ function AppContent() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            {/* Config Button */}
+            {/* Config Button - Now visible with auth */}
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -246,7 +312,7 @@ function AppContent() {
                     onClick={() => setIsConfigOpen(true)}
                     variant="secondary"
                     size="icon"
-                    className="bg-amber-700 hover:bg-amber-800 text-white config-button-hidden"
+                    className="bg-amber-700 hover:bg-amber-800 text-white"
                   >
                     <Settings className="w-5 h-5" />
                   </Button>
@@ -256,6 +322,8 @@ function AppContent() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            {/* User Menu */}
+            <UserMenu />
           </div>
         </div>
       </header>

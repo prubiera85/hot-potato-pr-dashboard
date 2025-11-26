@@ -67,10 +67,3 @@
     color: hsl(var(--foreground));
   }
 }
-
-/* Hide buttons until password protection is implemented */
-.config-button-hidden,
-.urgent-button-hidden,
-.quick-button-hidden {
-  display: none !important;
-}
