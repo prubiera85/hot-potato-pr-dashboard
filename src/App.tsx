@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tanstack/react-query';
-import { Settings, BookOpen, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { ConfigPanel } from './components/ConfigPanel';
 import { LoginScreen } from './components/LoginScreen';
@@ -9,8 +9,6 @@ import { MyPRsView } from './components/MyPRsView';
 import { TeamView } from './components/TeamView';
 import { AppSidebar } from './components/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/sidebar';
-import { Button } from './components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -281,7 +279,7 @@ function AppContent() {
     <SidebarProvider>
       <AppSidebar
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team')}
         onOpenConfig={() => setIsConfigOpen(true)}
         onOpenGifModal={() => setIsGifModalOpen(true)}
         onOpenHelp={() => setIsHelpModalOpen(true)}
