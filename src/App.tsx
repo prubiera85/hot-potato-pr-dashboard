@@ -8,6 +8,7 @@ import { AuthCallback } from './components/AuthCallback';
 import { MyPRsView } from './components/MyPRsView';
 import { TeamView } from './components/TeamView';
 import { RoleManagementView } from './components/RoleManagementView';
+import { GamificationView } from './components/GamificationView';
 import { AppSidebar } from './components/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/sidebar';
 import {
@@ -35,7 +36,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { isAuthenticated, token, user, logout } = useAuthStore();
-  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team' | 'config' | 'roles'>('all');
+  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team' | 'config' | 'roles' | 'gamification'>('all');
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
@@ -293,7 +294,7 @@ function AppContent() {
                   <BreadcrumbLink className="cursor-pointer">
                     {(currentView === 'all' || currentView === 'my-prs') && 'Pull Requests'}
                     {currentView === 'team' && 'Equipo'}
-                    {(currentView === 'config' || currentView === 'roles') && 'Admin'}
+                    {(currentView === 'config' || currentView === 'roles' || currentView === 'gamification') && 'Zona Admin'}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -304,6 +305,7 @@ function AppContent() {
                     {currentView === 'team' && 'Vista por Usuario'}
                     {currentView === 'config' && 'Configuración'}
                     {currentView === 'roles' && 'Gestión de Roles'}
+                    {currentView === 'gamification' && 'Gamificación'}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -373,6 +375,7 @@ function AppContent() {
               />
             )}
             {currentView === 'roles' && <RoleManagementView />}
+            {currentView === 'gamification' && <GamificationView />}
           </>
         )}
 

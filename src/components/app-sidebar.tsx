@@ -1,4 +1,4 @@
-import { LayoutGrid, User, Users, HelpCircle, Shield, Settings } from 'lucide-react';
+import { LayoutGrid, User, Users, HelpCircle, Shield, Settings, Trophy } from 'lucide-react';
 import { NavUser } from './nav-user';
 import {
   Sidebar,
@@ -25,6 +25,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHelp, ...props }: AppSidebarProps) {
   const canAccessConfig = useHasPermission('canAccessConfig');
   const canManageRoles = useHasPermission('canManageRoles');
+  const canAccessGamification = useHasPermission('canAccessGamification');
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
@@ -96,10 +97,10 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Sección Admin - Solo visible para admin y superadmin */}
+        {/* Sección Zona Admin - Solo visible para admin y superadmin */}
         {canAccessConfig && (
           <SidebarGroup>
-            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupLabel>Zona Admin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
@@ -121,6 +122,18 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
                     >
                       <Shield className="h-4 w-4" />
                       <span>Gestión de Roles</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {canAccessGamification && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      tooltip="Gamificación"
+                      isActive={currentView === 'gamification'}
+                      onClick={() => onViewChange('gamification')}
+                    >
+                      <Trophy className="h-4 w-4" />
+                      <span>Gamificación</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}

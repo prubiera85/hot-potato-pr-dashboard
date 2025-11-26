@@ -1,4 +1,4 @@
-import { Shield, User as UserIcon, Info, AlertCircle } from 'lucide-react';
+import { Shield, User as UserIcon, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -68,30 +68,6 @@ export function RoleManagementView() {
         </p>
       </div>
 
-      {/* Info Alert */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardContent className="pt-4">
-          <div className="flex gap-3">
-            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
-              <p className="font-semibold mb-1">Configuración de Roles</p>
-              <p className="mb-2">
-                Los roles se configuran mediante la variable de entorno <code className="bg-blue-100 px-1 rounded">USER_ROLES</code> en Netlify.
-              </p>
-              <p className="mb-2">
-                <strong>Formato:</strong> <code className="bg-blue-100 px-1 rounded">username1:role1,username2:role2,...</code>
-              </p>
-              <p>
-                <strong>Ejemplo:</strong> <code className="bg-blue-100 px-1 rounded">prubiera85:superadmin,john:admin,jane:developer</code>
-              </p>
-              <p className="mt-2 text-xs text-blue-700">
-                Los usuarios no especificados en la configuración tendrán el rol <strong>guest</strong> por defecto.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Role Descriptions */}
       <div>
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Roles Disponibles</h2>
@@ -116,7 +92,9 @@ export function RoleManagementView() {
                   <div className="space-y-2">
                     <p className="text-sm font-semibold text-gray-700">Permisos:</p>
                     <div className="grid grid-cols-1 gap-1.5">
-                      {Object.entries(roleInfo.permissions).map(([key, value]) => {
+                      {Object.entries(roleInfo.permissions)
+                        .filter(([key]) => key !== 'canAccessGamification') // Ocultar permiso de gamificación
+                        .map(([key, value]) => {
                         const permissionLabels: Record<string, string> = {
                           canViewDashboard: 'Ver dashboard',
                           canToggleUrgentQuick: 'Marcar urgente/rápida',
@@ -156,27 +134,6 @@ export function RoleManagementView() {
           })}
         </div>
       </div>
-
-      {/* Command to update roles */}
-      <Card className="border-purple-200 bg-purple-50">
-        <CardContent className="pt-4">
-          <div className="flex gap-3">
-            <Shield className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-purple-900">
-              <p className="font-semibold mb-2">Actualizar Roles</p>
-              <p className="mb-2">
-                Para modificar los roles de los usuarios, actualiza la variable de entorno en Netlify:
-              </p>
-              <code className="block bg-purple-100 p-2 rounded text-xs overflow-x-auto">
-                netlify env:set USER_ROLES "prubiera85:superadmin,user2:admin,user3:developer"
-              </code>
-              <p className="mt-2 text-xs text-purple-700">
-                Los cambios se aplicarán en el próximo login de cada usuario.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

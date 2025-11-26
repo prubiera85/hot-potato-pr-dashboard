@@ -86,7 +86,8 @@ export interface UserPermissions {
   canManageAssignees: boolean;         // developer, admin, superadmin
   canAccessConfig: boolean;            // admin, superadmin
   canManageRepositories: boolean;      // admin, superadmin
-  canManageRoles: boolean;             // solo superadmin
+  canManageRoles: boolean;             // admin, superadmin
+  canAccessGamification: boolean;      // solo superadmin
 }
 
 export interface RoleConfig {
@@ -104,6 +105,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canAccessConfig: true,
     canManageRepositories: true,
     canManageRoles: true,
+    canAccessGamification: true,
   },
   admin: {
     canViewDashboard: true,
@@ -111,7 +113,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageAssignees: true,
     canAccessConfig: true,
     canManageRepositories: true,
-    canManageRoles: false,
+    canManageRoles: true,
+    canAccessGamification: false,
   },
   developer: {
     canViewDashboard: true,
@@ -120,6 +123,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canAccessConfig: false,
     canManageRepositories: false,
     canManageRoles: false,
+    canAccessGamification: false,
   },
   guest: {
     canViewDashboard: true,
@@ -128,18 +132,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canAccessConfig: false,
     canManageRepositories: false,
     canManageRoles: false,
+    canAccessGamification: false,
   },
 };
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, RoleConfig> = {
   superadmin: {
     name: 'Super Admin',
-    description: 'Acceso completo a todas las funcionalidades incluyendo gestión de roles',
+    description: 'Acceso completo a todas las funcionalidades incluyendo gamificación',
     permissions: ROLE_PERMISSIONS.superadmin,
   },
   admin: {
     name: 'Admin',
-    description: 'Acceso a configuraciones de repositorios y todas las opciones de developer',
+    description: 'Gestión de roles, configuraciones y todas las opciones de developer',
     permissions: ROLE_PERMISSIONS.admin,
   },
   developer: {
