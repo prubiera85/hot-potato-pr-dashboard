@@ -300,24 +300,26 @@ export function RoleManagementView() {
                       <Badge className={getRoleBadgeColor(user.role)}>
                         {user.role}
                       </Badge>
-                      <TooltipProvider delayDuration={0}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveUser(user.username)}
-                              disabled={removeUserMutation.isPending}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Eliminar usuario</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      {user.role !== 'superadmin' && (
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveUser(user.username)}
+                                disabled={removeUserMutation.isPending}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Eliminar usuario</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
                   </div>
                 ))}

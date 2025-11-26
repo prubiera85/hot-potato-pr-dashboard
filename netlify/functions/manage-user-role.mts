@@ -99,6 +99,18 @@ export default async (request: Request) => {
         );
       }
 
+      // Obtener el rol del usuario a eliminar
+      const allUsers = await getUserRoles();
+      const userToRemove = allUsers.find(u => u.username.toLowerCase() === body.username.toLowerCase());
+
+      // No permitir eliminar superadmins
+      if (userToRemove && userToRemove.role === 'superadmin') {
+        return new Response(
+          JSON.stringify({ error: 'Cannot remove superadmin users' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
       const users = await removeUserRole(body.username);
 
       return new Response(
