@@ -181,9 +181,26 @@ function AppContent() {
           ...old,
           prs: old.prs.map((p: EnhancedPR) => {
             if (p.id === pr.id) {
+              // Update labels array as well
+              let newLabels = [...p.labels];
+              const urgentLabelIndex = newLabels.findIndex(l => l.name.toLowerCase() === 'urgent');
+
+              if (newIsUrgent && urgentLabelIndex === -1) {
+                // Add urgent label
+                newLabels.push({
+                  id: Date.now(), // Temporary ID
+                  name: 'urgent',
+                  color: 'd73a4a'
+                });
+              } else if (!newIsUrgent && urgentLabelIndex !== -1) {
+                // Remove urgent label
+                newLabels = newLabels.filter(l => l.name.toLowerCase() !== 'urgent');
+              }
+
               return {
                 ...p,
                 isUrgent: newIsUrgent,
+                labels: newLabels,
               };
             }
             return p;
@@ -274,9 +291,26 @@ function AppContent() {
           ...old,
           prs: old.prs.map((p: EnhancedPR) => {
             if (p.id === pr.id) {
+              // Update labels array as well
+              let newLabels = [...p.labels];
+              const quickLabelIndex = newLabels.findIndex(l => l.name.toLowerCase() === 'quick');
+
+              if (newIsQuick && quickLabelIndex === -1) {
+                // Add quick label
+                newLabels.push({
+                  id: Date.now(), // Temporary ID
+                  name: 'quick',
+                  color: 'fbca04'
+                });
+              } else if (!newIsQuick && quickLabelIndex !== -1) {
+                // Remove quick label
+                newLabels = newLabels.filter(l => l.name.toLowerCase() !== 'quick');
+              }
+
               return {
                 ...p,
                 isQuick: newIsQuick,
+                labels: newLabels,
               };
             }
             return p;
