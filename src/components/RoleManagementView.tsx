@@ -1,4 +1,4 @@
-import { User as UserIcon } from 'lucide-react';
+import { Shield, User as UserIcon, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useHasPermission } from '@/hooks/usePermissions';
@@ -10,7 +10,34 @@ export function RoleManagementView() {
   const canManageRoles = useHasPermission('canManageRoles');
 
   if (!canManageRoles) {
-    return null;
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <Shield className="w-8 h-8 text-red-600" />
+            Gestión de Roles
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Administra los roles y permisos de los usuarios de la aplicación.
+          </p>
+        </div>
+
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-red-900">
+                <p className="font-semibold mb-1">Acceso Denegado</p>
+                <p>
+                  No tienes permisos para acceder a la gestión de roles.
+                  Solo los superadmins pueden gestionar roles de usuario.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const getRoleBadgeColor = (role: UserRole) => {
