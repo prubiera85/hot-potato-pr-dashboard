@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Acceso abierto habilitado**: Se eliminó la restricción de whitelist, ahora cualquier usuario con cuenta de GitHub puede hacer login
+- Documentación actualizada en CLAUDE.md para reflejar el modo de acceso abierto
+
 ## [2.0.0] - 2025-01-26
 
 ### Added

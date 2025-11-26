@@ -144,8 +144,8 @@ GITHUB_APP_CLIENT_SECRET=9a88fa126de4e1f4a282a1da52b24bd60d7b3480
 # JWT
 JWT_SECRET=super-secret-jwt-key-$(openssl rand -hex 16)
 
-# Whitelist (opcional - si no existe, permite todos)
-ALLOWED_GITHUB_USERS=prubiera,user2,user3
+# Whitelist (opcional - actualmente NO configurada = acceso abierto)
+# ALLOWED_GITHUB_USERS=prubiera,user2,user3
 ```
 
 ### Componentes de Autenticación
@@ -401,20 +401,29 @@ return <Dashboard />;
 
 El sistema soporta una whitelist opcional de usuarios permitidos:
 
+**Configuración Actual:**
+- ✅ **Acceso abierto**: La variable `ALLOWED_GITHUB_USERS` NO está configurada
+- ✅ Cualquier usuario con cuenta de GitHub puede hacer login
+
 **Configuración:**
 - Variable de entorno: `ALLOWED_GITHUB_USERS`
 - Formato: Lista separada por comas de usernames de GitHub
 - Ejemplo: `ALLOWED_GITHUB_USERS=prubiera,user2,user3`
 
 **Comportamiento:**
-- Si la variable NO está configurada → Permite todos los usuarios con cuenta de GitHub
+- Si la variable NO está configurada → Permite todos los usuarios con cuenta de GitHub (modo actual)
 - Si la variable ESTÁ configurada → Solo permite usuarios en la lista
 - Validación case-insensitive (normaliza a lowercase)
 - Error 403 si usuario no está permitido
 
-**Configurar en Netlify:**
+**Restringir acceso (si se requiere en el futuro):**
 ```bash
 netlify env:set ALLOWED_GITHUB_USERS "prubiera,user2,user3"
+```
+
+**Volver a acceso abierto:**
+```bash
+netlify env:unset ALLOWED_GITHUB_USERS
 ```
 
 ### Callbacks URL Configurados
@@ -445,7 +454,7 @@ La GitHub App tiene configuradas las siguientes callback URLs:
 **Consideraciones:**
 - El JWT_SECRET debe ser único por ambiente
 - Los client secrets deben mantenerse privados
-- La whitelist debe actualizarse cuando se incorpora nuevo personal
+- Actualmente en modo acceso abierto (sin whitelist)
 
 ### Environments y Deploys
 
@@ -802,8 +811,9 @@ Cuando se acumula un conjunto significativo de cambios en `[Unreleased]`:
 ## Notas Importantes
 
 1. **Autenticación obligatoria**: Todos los usuarios deben autenticarse con GitHub OAuth antes de acceder
-2. **Whitelist configurable**: Se puede restringir acceso a usuarios específicos mediante variable de entorno
-3. **Sesión persistente**: El token JWT se guarda en localStorage y persiste 7 días
+2. **Acceso abierto**: Actualmente cualquier usuario con cuenta de GitHub puede acceder (whitelist desactivada)
+3. **Whitelist configurable**: Se puede restringir acceso a usuarios específicos mediante variable de entorno si se requiere
+4. **Sesión persistente**: El token JWT se guarda en localStorage y persiste 7 días
 4. **Protected routes**: App.tsx maneja autenticación a nivel raíz antes de renderizar dashboard
 5. **El assignee es el revisor principal**: El assignee en este equipo representa al revisor principal que debe aprobar la PR, no a quien trabaja en ella
 6. **El reviewer NO afecta los colores**: Solo el assignee determina el color del borde
