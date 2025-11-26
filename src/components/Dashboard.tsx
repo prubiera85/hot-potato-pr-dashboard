@@ -537,12 +537,12 @@ export function Dashboard({
           <Button
             onClick={onRefresh}
             disabled={isLoading}
-            variant="default"
+            variant="outline"
             size="sm"
-            className="bg-green-600 hover:bg-green-700 ml-auto"
+            className="ml-auto"
           >
-            <RefreshCw className={isLoading ? 'animate-spin' : ''} />
-            <span>{isLoading ? 'Cargando...' : 'Refrescar'}</span>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refrescar
           </Button>
         </div>
       </div>

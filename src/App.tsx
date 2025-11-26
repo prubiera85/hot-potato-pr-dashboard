@@ -704,7 +704,44 @@ function AppContent() {
                 isProcessingReviewers={(pr) => processingPRs.has(`${getPRKey(pr)}-reviewers`)}
               />
             )}
-            {currentView === 'my-prs' && <MyPRsView />}
+            {currentView === 'my-prs' && (
+              <MyPRsView
+                prs={prs}
+                currentUser={user}
+                maxDaysOpen={config.maxDaysOpen}
+                onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
+                onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
+                onToggleAssignee={async (pr, userId) => {
+                  const userToAssign = prs
+                    .flatMap((p) => [...p.assignees, ...p.requested_reviewers, p.user])
+                    .find((u) => u.id === userId);
+                  if (userToAssign) {
+                    await toggleAssigneeMutation.mutateAsync({
+                      pr,
+                      userId,
+                      userLogin: userToAssign.login,
+                      avatarUrl: userToAssign.avatar_url,
+                    });
+                  }
+                }}
+                onToggleReviewer={async (pr, userId) => {
+                  const userToReview = prs
+                    .flatMap((p) => [...p.assignees, ...p.requested_reviewers, p.user])
+                    .find((u) => u.id === userId);
+                  if (userToReview) {
+                    await toggleReviewerMutation.mutateAsync({
+                      pr,
+                      userId,
+                      userLogin: userToReview.login,
+                      avatarUrl: userToReview.avatar_url,
+                    });
+                  }
+                }}
+                processingPRs={processingPRs}
+                onRefresh={() => refetch()}
+                isRefreshing={isFetching && !isTestMode}
+              />
+            )}
             {currentView === 'team' && <TeamView />}
             {currentView === 'config' && (
               <ConfigView

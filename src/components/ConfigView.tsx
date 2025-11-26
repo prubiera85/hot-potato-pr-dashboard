@@ -55,7 +55,7 @@ export function ConfigView({ config, onSave, isSaving, isTestMode, onTestModeCha
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
@@ -90,47 +90,49 @@ export function ConfigView({ config, onSave, isSaving, isTestMode, onTestModeCha
             Configura los límites de tiempo para detectar PRs que necesitan atención
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="assignmentTimeLimit">
-              Límite de asignación (horas)
-            </Label>
-            <Input
-              id="assignmentTimeLimit"
-              type="number"
-              min="1"
-              value={editedConfig.assignmentTimeLimit}
-              onChange={(e) =>
-                setEditedConfig({
-                  ...editedConfig,
-                  assignmentTimeLimit: parseInt(e.target.value) || 0,
-                })
-              }
-            />
-            <p className="text-sm text-gray-500">
-              Tiempo máximo sin assignee antes de mostrar warning (amarillo)
-            </p>
-          </div>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="assignmentTimeLimit">
+                Límite de asignación (horas)
+              </Label>
+              <Input
+                id="assignmentTimeLimit"
+                type="number"
+                min="1"
+                value={editedConfig.assignmentTimeLimit}
+                onChange={(e) =>
+                  setEditedConfig({
+                    ...editedConfig,
+                    assignmentTimeLimit: parseInt(e.target.value) || 0,
+                  })
+                }
+              />
+              <p className="text-sm text-gray-500">
+                Tiempo máximo sin assignee antes de mostrar warning (amarillo)
+              </p>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="maxDaysOpen">
-              Días máximos abierta
-            </Label>
-            <Input
-              id="maxDaysOpen"
-              type="number"
-              min="1"
-              value={editedConfig.maxDaysOpen}
-              onChange={(e) =>
-                setEditedConfig({
-                  ...editedConfig,
-                  maxDaysOpen: parseInt(e.target.value) || 0,
-                })
-              }
-            />
-            <p className="text-sm text-gray-500">
-              Días máximos que una PR puede estar abierta antes de considerarse crítica (rojo)
-            </p>
+            <div className="space-y-2">
+              <Label htmlFor="maxDaysOpen">
+                Días máximos abierta
+              </Label>
+              <Input
+                id="maxDaysOpen"
+                type="number"
+                min="1"
+                value={editedConfig.maxDaysOpen}
+                onChange={(e) =>
+                  setEditedConfig({
+                    ...editedConfig,
+                    maxDaysOpen: parseInt(e.target.value) || 0,
+                  })
+                }
+              />
+              <p className="text-sm text-gray-500">
+                Días máximos que una PR puede estar abierta antes de considerarse crítica (rojo)
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Vista "Mis PRs"**: Nueva sección para gestionar PRs personales
+  - Dos secciones independientes con contador de PRs
+  - "PRs Creadas por Mí": Muestra todas las PRs donde eres el autor
+  - "PRs Asignadas a Mí": Muestra PRs donde estás como assignee o reviewer
+  - Secciones plegables con iconos de chevron (ChevronDown/ChevronRight)
+  - Botón de refrescar con estilo consistente (variant outline)
+  - Título con icono User (blue-600) y descripción
+  - Funcionalidad completa de edición (urgent, quick, assignees, reviewers)
+- **Componente Collapsible**: Añadido componente de Shadcn/ui para secciones plegables
+
 ### Changed
+- **Botón de refrescar**: Estilo unificado en todas las vistas (variant outline en lugar de verde)
+- **Padding consistente**: Todas las vistas ahora tienen `space-y-6 px-6` para espaciado uniforme
+  - Dashboard, MyPRsView, TeamView, ConfigView, RoleManagementView, GamificationView
+- **Títulos homogéneos**: Todas las vistas principales tienen h1 con icono y descripción
+  - ConfigView: Settings icon (amber-700)
+  - RoleManagementView: Shield icon (purple-600)
+  - GamificationView: Trophy icon (yellow-600)
+  - MyPRsView: User icon (blue-600)
+- **ConfigView**: Límites de tiempo en dos columnas (grid responsive)
+  - Móvil: 1 columna
+  - Desktop: 2 columnas lado a lado
 - **Rediseño de PRCard**: Nueva distribución de contenido más organizada y limpia
   - **Header**: Icono + nombre del repo (izq) | Botones urgente/rápida solo iconos (der)
   - **Centro**: Título de la PR + información (tiempo, autor, comentarios)

@@ -3,10 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 
 export function GamificationView() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-6">
       <div>
-        <h1 className="text-3xl font-bold">Gamificación</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+          <Trophy className="w-8 h-8 text-yellow-600" />
+          Gamificación
+        </h1>
+        <p className="text-gray-600 mt-2">
           Sistema de puntuación y métricas para motivar la revisión de PRs
         </p>
       </div>

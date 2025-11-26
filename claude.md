@@ -538,7 +538,9 @@ Componente principal que contiene:
 - Filtro de repositorios (muestra TODOS los repos configurados, incluso sin PRs)
 - Ordenamiento de PRs
 - Lista de PRs
+- Botón de refrescar (variant outline)
 - Estado vacío con GIF animado
+- Padding consistente: `space-y-6 px-6`
 
 **Características importantes:**
 - Stats cards son botones con tooltips informativos instantáneos (`delayDuration={0}`)
@@ -547,6 +549,52 @@ Componente principal que contiene:
 - Filtros activos controlan qué PRs se muestran (lógica OR/inclusiva)
 - Auto-refresco cada 5 minutos (cuando no está en modo test)
 - Estado vacío muestra GIF de matojo del desierto cuando no hay PRs
+
+### MyPRsView.tsx
+
+Vista personal de PRs del usuario autenticado:
+
+**Estructura:**
+- Título h1 con icono User (blue-600) y descripción
+- Botón de refrescar alineado a la derecha
+- Dos secciones independientes con contadores
+
+**Secciones plegables:**
+1. **PRs Creadas por Mí**
+   - Muestra todas las PRs donde el usuario es el autor
+   - Icono de chevron (ChevronDown/ChevronRight) indica estado
+   - Contador visible: `(X)`
+   - Estado por defecto: abierta
+
+2. **PRs Asignadas a Mí**
+   - Muestra PRs donde el usuario está como assignee o reviewer
+   - Puede incluir PRs que el usuario creó si también se autoasignó
+   - Mismo formato que la primera sección
+   - Estado por defecto: abierta
+
+**Características:**
+- Componente Collapsible de Shadcn/ui para plegar/desplegar
+- Click en título para colapsar/expandir
+- Estado independiente para cada sección
+- Funcionalidad completa: urgent, quick, assignees, reviewers
+- Carga automática de colaboradores de todos los repos
+- Padding consistente: `space-y-6 px-6`
+- Optimistic updates en todas las mutaciones
+- Tooltips instantáneos (`delayDuration={0}`)
+
+**Lógica de filtrado:**
+```typescript
+// PRs Creadas por Mí
+myCreatedPRs = prs.filter(pr => pr.user.login === currentUser.login)
+
+// PRs Asignadas a Mí
+myAssignedPRs = prs.filter(pr =>
+  pr.assignees.some(a => a.login === currentUser.login) ||
+  pr.requested_reviewers.some(r => r.login === currentUser.login)
+)
+```
+
+**Nota:** Una PR puede aparecer en ambas secciones si la creaste y te autoasignaste.
 
 ### PRCard.tsx
 
@@ -789,6 +837,7 @@ Por seguridad, los siguientes botones están ocultos con CSS hasta implementar a
 - Badge (para labels de GitHub)
 - Sidebar, SidebarProvider, SidebarInset, SidebarTrigger (y todos los primitivos)
 - Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator
+- Collapsible, CollapsibleTrigger, CollapsibleContent (para secciones plegables)
 
 **Theme Configuration:**
 El proyecto usa el theme **Yellow** de Shadcn configurado en `src/index.css`:
