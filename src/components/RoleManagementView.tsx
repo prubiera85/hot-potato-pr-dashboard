@@ -1,13 +1,39 @@
-import { Shield, User as UserIcon, AlertCircle } from 'lucide-react';
+import { Shield, User as UserIcon, AlertCircle, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { useHasPermission } from '@/hooks/usePermissions';
 import type { UserRole } from '@/types/github';
 import { ROLE_DESCRIPTIONS } from '@/types/github';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { useQuery } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores/authStore';
+
+interface UserRoleInfo {
+  username: string;
+  role: UserRole;
+}
 
 export function RoleManagementView() {
   const canManageRoles = useHasPermission('canManageRoles');
+  const { token } = useAuthStore();
+
+  // Fetch user roles
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ['user-roles'],
+    queryFn: async () => {
+      const response = await fetch('/api/get-user-roles', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch user roles');
+      }
+      const data = await response.json();
+      return data.users as UserRoleInfo[];
+    },
+    enabled: canManageRoles && !!token,
+  });
 
   if (!canManageRoles) {
     return (
@@ -135,6 +161,53 @@ export function RoleManagementView() {
             );
           })}
         </div>
+      </div>
+
+      {/* Users List */}
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Users className="w-6 h-6" />
+          Usuarios del Sistema
+        </h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Listado de Usuarios</CardTitle>
+            <CardDescription>
+              Usuarios configurados con roles de admin y developer
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingUsers ? (
+              <p className="text-gray-500 text-center py-4">Cargando usuarios...</p>
+            ) : !usersData || usersData.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No hay usuarios configurados</p>
+            ) : (
+              <div className="space-y-2">
+                {usersData.map((user) => (
+                  <div
+                    key={user.username}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                        <UserIcon className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">@{user.username}</p>
+                        <p className="text-sm text-gray-500">
+                          {ROLE_DESCRIPTIONS[user.role]?.name || user.role}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className={getRoleBadgeColor(user.role)}>
+                      {user.role}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
