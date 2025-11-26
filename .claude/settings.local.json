@@ -37,7 +37,9 @@
       "Bash(netlify env:list:*)",
       "Bash(mkdir:*)",
       "Bash(npm run start)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

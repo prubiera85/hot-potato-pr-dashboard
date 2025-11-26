@@ -64,6 +64,8 @@ const DropdownMenuSeparator = React.forwardRef<
 ))
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
 
+const DropdownMenuGroup = DropdownMenuPrimitive.Group
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -71,4 +73,5 @@ export {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuGroup,
 }

@@ -11,7 +11,8 @@ HotPotato PR Dashboard es una aplicación web que ayuda a gestionar Pull Request
 - **Frontend**: React + TypeScript + Vite
 - **Styling**: Tailwind CSS
 - **UI Components**: Shadcn/ui (Radix UI)
-- **State Management**: React Query (TanStack Query)
+- **State Management**: React Query (TanStack Query) + Zustand (Auth)
+- **Authentication**: GitHub OAuth + JWT
 - **Icons**: Lucide React
 - **Deployment**: Netlify
 - **Backend**: Netlify Functions (Serverless)
@@ -23,18 +24,40 @@ HotPotato PR Dashboard es una aplicación web que ayuda a gestionar Pull Request
 pr-dashboard/
 ├── src/
 │   ├── components/
-│   │   ├── ui/           # Componentes UI de Shadcn
-│   │   ├── Dashboard.tsx # Componente principal del dashboard
-│   │   ├── PRCard.tsx    # Tarjeta individual de PR
-│   │   └── ConfigPanel.tsx # Panel de configuración
+│   │   ├── ui/               # Componentes UI de Shadcn
+│   │   │   ├── sidebar.tsx   # Componente sidebar con primitivos
+│   │   │   ├── breadcrumb.tsx # Componente de breadcrumbs
+│   │   │   ├── separator.tsx  # Componente separador
+│   │   │   └── ...           # Otros componentes UI
+│   │   ├── app-sidebar.tsx   # Sidebar principal con navegación
+│   │   ├── nav-user.tsx      # Componente de usuario estilo sidebar-07
+│   │   ├── Dashboard.tsx     # Componente principal del dashboard
+│   │   ├── MyPRsView.tsx     # Vista de "Mis PRs" (placeholder)
+│   │   ├── TeamView.tsx      # Vista por usuario (placeholder)
+│   │   ├── PRCard.tsx        # Tarjeta individual de PR
+│   │   ├── ConfigPanel.tsx   # Panel de configuración
+│   │   ├── LoginScreen.tsx   # Pantalla de login con GitHub OAuth
+│   │   ├── AuthCallback.tsx  # Maneja callback de OAuth
+│   │   └── UserMenu.tsx      # Menú de usuario (legacy, replaced by nav-user)
+│   ├── hooks/
+│   │   └── use-mobile.tsx    # Hook para detectar dispositivos móviles
+│   ├── stores/
+│   │   └── authStore.ts      # Zustand store para autenticación
 │   ├── types/
-│   │   └── github.ts     # Tipos de TypeScript
+│   │   └── github.ts         # Tipos de TypeScript
 │   ├── utils/
-│   │   ├── prHelpers.ts  # Funciones auxiliares
-│   │   └── dummyData.ts  # Datos de prueba
-│   └── App.tsx           # Componente raíz
-├── netlify/functions/    # Funciones serverless
-└── public/              # Assets estáticos
+│   │   ├── prHelpers.ts      # Funciones auxiliares
+│   │   ├── dummyData.ts      # Datos de prueba
+│   │   └── auth.ts           # Funciones de autenticación
+│   └── App.tsx               # Componente raíz con sidebar y navegación
+├── netlify/functions/
+│   ├── auth-login.mts        # Inicia flujo OAuth
+│   ├── auth-callback.mts     # Procesa callback de OAuth
+│   ├── auth-me.mts           # Verifica sesión actual
+│   └── auth/
+│       ├── jwt.mts           # Utilidades JWT
+│       └── middleware.mts    # Middleware de autenticación
+└── public/                   # Assets estáticos
 ```
 
 ## Sistema de Colores
@@ -93,6 +116,407 @@ Todas las stats cards tienen tooltips instantáneos (`delayDuration={0}`) que ex
 - **Fondo**: Amarillo `#ffeb9e`
 - **Título**: "Hot" en rojo (`text-red-600`), resto en negro
 - **Botones**: Color patata (`bg-amber-700 hover:bg-amber-800`)
+
+## Sistema de Autenticación
+
+### Arquitectura de Autenticación
+
+La aplicación utiliza **GitHub OAuth (User-to-Server flow)** con la GitHub App existente, no requiere una OAuth App separada. El flujo completo es:
+
+1. **Usuario no autenticado** → Pantalla de login (`LoginScreen.tsx`)
+2. **Click en "Sign in with GitHub"** → Redirige a GitHub OAuth (`/api/auth-login`)
+3. **Usuario autoriza en GitHub** → GitHub redirige a callback (`/auth/callback`)
+4. **Callback procesa código** → Intercambia por access token, obtiene info de usuario
+5. **Whitelist check** → Valida si el usuario está en la lista permitida
+6. **Genera JWT** → Token con expiración de 7 días
+7. **Guarda en localStorage** → Zustand store persiste el token y usuario
+8. **Usuario autenticado** → Acceso al dashboard
+
+### Variables de Entorno
+
+Configuradas en Netlify (Production y Development):
+
+```bash
+# GitHub App OAuth
+GITHUB_APP_CLIENT_ID=Iv23liMJt35aZuKXNpMX
+GITHUB_APP_CLIENT_SECRET=9a88fa126de4e1f4a282a1da52b24bd60d7b3480
+
+# JWT
+JWT_SECRET=super-secret-jwt-key-$(openssl rand -hex 16)
+
+# Whitelist (opcional - si no existe, permite todos)
+ALLOWED_GITHUB_USERS=prubiera,user2,user3
+```
+
+### Componentes de Autenticación
+
+#### LoginScreen.tsx
+
+Pantalla de login mostrada a usuarios no autenticados:
+- Diseño centrado con logo de patata
+- Botón "Sign in with GitHub" con icono de GitHub
+- Manejo de errores (muestra mensaje si hay error en query params)
+- Explicación del propósito de la autenticación
+- Usa Shadcn Button y Card components
+
+```typescript
+const handleLogin = async () => {
+  setError(null);
+  try {
+    await initiateGitHubLogin();
+  } catch (err) {
+    setError('Error al iniciar sesión');
+  }
+};
+```
+
+#### AuthCallback.tsx
+
+Procesa el callback de GitHub OAuth:
+- Extrae el código de autorización de la URL
+- Maneja errores de OAuth (access_denied, etc.)
+- Intercambia código por token mediante `/api/auth-callback`
+- Guarda token y usuario en authStore
+- Limpia la URL (reemplaza con `/`)
+- Redirige al dashboard
+
+```typescript
+const code = params.get('code');
+const error = params.get('error');
+
+if (error) {
+  navigate(`/?error=${error}`);
+  return;
+}
+
+const { token, user } = await handleOAuthCallback(code);
+login(token, user);
+window.history.replaceState({}, document.title, '/');
+onSuccess();
+```
+
+#### UserMenu.tsx
+
+Menú dropdown con avatar del usuario:
+- Avatar con imagen de GitHub (fallback a iniciales)
+- Nombre y username
+- Email (si disponible)
+- Opciones: Mi perfil, Configuración, Cerrar sesión
+- Logout limpia el store y recarga la página
+- Usa Shadcn DropdownMenu y Avatar components
+
+```typescript
+const handleLogout = () => {
+  logout();
+  window.location.reload();
+};
+```
+
+#### authStore.ts (Zustand)
+
+Store de autenticación con persistencia en localStorage:
+- Estado: `user`, `token`, `isAuthenticated`
+- Acciones: `login(token, user)`, `logout()`
+- Persiste automáticamente en localStorage con key `auth-storage`
+- Se restaura automáticamente al recargar la página
+
+```typescript
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      login: (token: string, user: User) => set({ token, user, isAuthenticated: true }),
+      logout: () => set({ token: null, user: null, isAuthenticated: false }),
+    }),
+    { name: 'auth-storage' }
+  )
+);
+```
+
+### Funciones Serverless de Autenticación
+
+#### auth-login.mts
+
+Endpoint: `GET /api/auth-login`
+
+Inicia el flujo OAuth:
+- Construye URL de autorización de GitHub
+- Incluye `client_id`, `redirect_uri`, y `scope` (read:user, user:email)
+- Retorna la URL al frontend para redirigir
+
+```typescript
+const githubAuthUrl = new URL('https://github.com/login/oauth/authorize');
+githubAuthUrl.searchParams.set('client_id', clientId);
+githubAuthUrl.searchParams.set('redirect_uri', callbackUrl);
+githubAuthUrl.searchParams.set('scope', 'read:user user:email');
+return new Response(JSON.stringify({ authUrl: githubAuthUrl.toString() }));
+```
+
+#### auth-callback.mts
+
+Endpoint: `GET /api/auth-callback?code=xxx`
+
+Procesa el callback de OAuth:
+1. Intercambia código por access token en GitHub
+2. Usa el token para obtener información del usuario
+3. Verifica whitelist (si está configurada)
+4. Genera JWT con información del usuario
+5. Retorna token y usuario al frontend
+
+```typescript
+// Intercambio de código
+const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+  method: 'POST',
+  body: JSON.stringify({ client_id, client_secret, code }),
+});
+
+// Obtener usuario
+const userResponse = await fetch('https://api.github.com/user', {
+  headers: { 'Authorization': `Bearer ${accessToken}` }
+});
+
+// Verificar whitelist
+if (!isUserAllowed(githubUser.login)) {
+  return new Response(JSON.stringify({ error: 'User not allowed' }), { status: 403 });
+}
+
+// Generar JWT
+const token = generateToken(user);
+return new Response(JSON.stringify({ token, user }));
+```
+
+#### auth-me.mts
+
+Endpoint: `GET /api/auth-me`
+
+Verifica la sesión actual:
+- Requiere header `Authorization: Bearer <token>`
+- Usa middleware `requireAuth` para validar JWT
+- Retorna información del usuario si el token es válido
+
+```typescript
+export default async (request: Request) => {
+  const user = await requireAuth(request);
+  return new Response(JSON.stringify({ user }));
+};
+```
+
+#### auth/jwt.mts
+
+Utilidades para manejo de JWT:
+
+**Funciones:**
+- `generateToken(user)`: Genera JWT con expiración de 7 días
+- `verifyToken(token)`: Verifica y decodifica JWT
+- `isUserAllowed(login)`: Verifica si usuario está en whitelist
+
+```typescript
+export function generateToken(user: UserPayload): string {
+  const secret = Netlify.env.get('JWT_SECRET');
+  return jwt.sign(user, secret, { expiresIn: '7d' });
+}
+
+export function verifyToken(token: string): JWTPayload {
+  const secret = Netlify.env.get('JWT_SECRET');
+  return jwt.verify(token, secret) as JWTPayload;
+}
+
+export function isUserAllowed(login: string): boolean {
+  const allowedUsers = Netlify.env.get('ALLOWED_GITHUB_USERS');
+  if (!allowedUsers) return true; // Si no hay whitelist, permite todos
+
+  const allowedList = allowedUsers.split(',').map(u => u.trim().toLowerCase());
+  return allowedList.includes(login.toLowerCase());
+}
+```
+
+#### auth/middleware.mts
+
+Middleware de autenticación para proteger endpoints:
+
+```typescript
+export async function requireAuth(request: Request): Promise<JWTPayload> {
+  const authHeader = request.headers.get('Authorization');
+  const token = extractTokenFromHeader(authHeader || '');
+
+  if (!token) {
+    throw new Error('No authentication token provided');
+  }
+
+  return verifyToken(token);
+}
+
+function extractTokenFromHeader(authHeader: string): string | null {
+  if (!authHeader.startsWith('Bearer ')) return null;
+  return authHeader.substring(7);
+}
+```
+
+### Protected Routes en App.tsx
+
+La aplicación implementa protected routes a nivel del componente raíz:
+
+```typescript
+const { isAuthenticated, token, user, logout } = useAuthStore();
+const [isVerifyingSession, setIsVerifyingSession] = useState(true);
+
+// Verificar sesión al cargar
+useEffect(() => {
+  const verify = async () => {
+    if (token && !user) {
+      const verifiedUser = await verifySession(token);
+      if (!verifiedUser) logout();
+    }
+    setIsVerifyingSession(false);
+  };
+  verify();
+}, [token, user, logout]);
+
+// Detectar callback de OAuth
+const urlParams = new URLSearchParams(window.location.search);
+const isCallback = urlParams.has('code') || urlParams.has('error');
+
+// Mostrar loading durante verificación
+if (isVerifyingSession) {
+  return <div>Verificando sesión...</div>;
+}
+
+// Manejar callback
+if (isCallback) {
+  return <AuthCallback onSuccess={() => window.location.href = '/'} />;
+}
+
+// Redirigir a login si no está autenticado
+if (!isAuthenticated) {
+  return <LoginScreen />;
+}
+
+// Mostrar dashboard si está autenticado
+return <Dashboard />;
+```
+
+### Whitelist de Usuarios
+
+El sistema soporta una whitelist opcional de usuarios permitidos:
+
+**Configuración:**
+- Variable de entorno: `ALLOWED_GITHUB_USERS`
+- Formato: Lista separada por comas de usernames de GitHub
+- Ejemplo: `ALLOWED_GITHUB_USERS=prubiera,user2,user3`
+
+**Comportamiento:**
+- Si la variable NO está configurada → Permite todos los usuarios con cuenta de GitHub
+- Si la variable ESTÁ configurada → Solo permite usuarios en la lista
+- Validación case-insensitive (normaliza a lowercase)
+- Error 403 si usuario no está permitido
+
+**Configurar en Netlify:**
+```bash
+netlify env:set ALLOWED_GITHUB_USERS "prubiera,user2,user3"
+```
+
+### Callbacks URL Configurados
+
+La GitHub App tiene configuradas las siguientes callback URLs:
+
+**Production:**
+- `https://hot-potato-pr-dashboard.netlify.app/auth/callback`
+
+**Development (Branch Deploy):**
+- `https://development--hot-potato-pr-dashboard.netlify.app/auth/callback`
+
+**Local Development:**
+- `http://localhost:5173/auth/callback`
+
+### Seguridad
+
+**Medidas de seguridad implementadas:**
+
+1. **JWT con expiración**: Tokens expiran en 7 días
+2. **Whitelist opcional**: Control de acceso a nivel de usuario
+3. **HTTPS obligatorio**: Netlify fuerza HTTPS en todos los ambientes
+4. **Secrets en variables de entorno**: Nunca en código
+5. **Token en localStorage**: Accesible solo al mismo dominio
+6. **Verificación de sesión**: Al cargar la app, verifica token con backend
+7. **Logout limpia todo**: Elimina token y recarga página
+
+**Consideraciones:**
+- El JWT_SECRET debe ser único por ambiente
+- Los client secrets deben mantenerse privados
+- La whitelist debe actualizarse cuando se incorpora nuevo personal
+
+### Environments y Deploys
+
+**Main (Production):**
+- URL: `https://hot-potato-pr-dashboard.netlify.app`
+- Deploy automático en push a `main`
+- Variables de entorno de producción
+
+**Development (Staging):**
+- URL: `https://development--hot-potato-pr-dashboard.netlify.app`
+- Deploy automático en push a `development`
+- Variables de entorno de desarrollo
+- Para testing con el equipo antes de producción
+
+**Configuración en netlify.toml:**
+```toml
+[context.development]
+  command = "npm run build"
+
+[context.development.environment]
+  NODE_ENV = "development"
+```
+
+## Sistema de Navegación
+
+### Sidebar (Shadcn sidebar-07)
+
+La aplicación usa un sidebar colapsible basado en el patrón sidebar-07 de Shadcn/ui:
+
+**Características:**
+- **Collapsible**: Se puede colapsar a modo icono con Ctrl/Cmd + B
+- **Variant "inset"**: Contenido principal con bordes redondeados y sombra
+- **Responsive**: En móvil se muestra como drawer (Sheet component)
+- **Estructura de navegación**:
+  - **Header**: Logo de patata clickeable (animación wiggle + popup GIF)
+  - **Content**: Dos secciones de navegación
+    - **Pull Requests**: "Todas las PRs", "Mis PRs"
+    - **Equipo**: "Vista por Usuario"
+  - **Footer**: Botón "Leyenda de colores" + NavUser component
+
+**Componentes relacionados:**
+- `app-sidebar.tsx`: Sidebar principal con toda la navegación
+- `nav-user.tsx`: Componente de usuario estilo sidebar-07 con dropdown
+- `ui/sidebar.tsx`: Primitivos del sidebar de Shadcn
+- `hooks/use-mobile.tsx`: Hook para detectar dispositivos móviles
+
+### Breadcrumbs
+
+El header muestra breadcrumbs dinámicos en lugar del título:
+- **Pull Requests** > **Todas las PRs** / **Mis PRs**
+- **Equipo** > **Vista por Usuario**
+
+Los breadcrumbs se actualizan automáticamente según la vista actual.
+
+### Vistas Disponibles
+
+1. **Todas las PRs** (`currentView='all'`): Vista principal del Dashboard
+2. **Mis PRs** (`currentView='my-prs'`): Placeholder - PRs donde soy assignee o reviewer
+3. **Vista por Usuario** (`currentView='team'`): Placeholder - Resumen por miembro del equipo
+
+### NavUser Component
+
+Reemplaza al antiguo UserMenu con mejor UX estilo sidebar-07:
+- Avatar del usuario con foto de GitHub
+- Nombre, username y email
+- Dropdown con opciones:
+  - Mi perfil
+  - Configuración (abre ConfigPanel)
+  - Cerrar sesión
+- Se adapta al estado del sidebar (expandido/colapsado)
+- Responsive: dropdown se posiciona según el dispositivo
 
 ## Componentes Principales
 
@@ -253,6 +677,16 @@ Por seguridad, los siguientes botones están ocultos con CSS hasta implementar a
 - Sheet, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent
 - Avatar, AvatarImage, AvatarFallback
 - Badge (para labels de GitHub)
+- Sidebar, SidebarProvider, SidebarInset, SidebarTrigger (y todos los primitivos)
+- Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator
+
+**Theme Configuration:**
+El proyecto usa el theme **Yellow** de Shadcn configurado en `src/index.css`:
+- **Primary color**: Yellow-400 (`47.9 95.8% 53.1%`) - Amarillo vibrante
+- **Primary foreground**: Yellow-900 (`26 83.3% 14.1%`) - Marrón oscuro
+- **Ring/Focus**: Yellow para acentos de enfoque
+- **Sidebar**: Colores yellow para estados activos y ring
+- El theme está configurado tanto para modo light como dark
 
 **Para consultar componentes:**
 ```typescript
@@ -367,29 +801,36 @@ Cuando se acumula un conjunto significativo de cambios en `[Unreleased]`:
 
 ## Notas Importantes
 
-1. **El assignee es el revisor principal**: El assignee en este equipo representa al revisor principal que debe aprobar la PR, no a quien trabaja en ella
-2. **El reviewer NO afecta los colores**: Solo el assignee determina el color del borde
-3. **Los filtros son inclusivos**: Mostrar items que cumplan con AL MENOS UNO de los filtros activos
-4. **Tooltips inmediatos**: Siempre usar `delayDuration={0}` en TooltipProvider para tooltips instantáneos
-5. **Stats cards con tooltips**: Todas las stats cards tienen tooltips explicativos que aparecen instantáneamente
-6. **Colores consistentes**: Usar la paleta amber para "patata", yellow para warnings, red para críticos
-7. **Accesibilidad**: Checkboxes dentro de labels, tooltips descriptivos, colores con buen contraste
-8. **Stats cards clickeables**: Comportamiento exclusivo (click = solo ese filtro activo)
-9. **Repositorios siempre visibles**: El selector muestra todos los repos configurados, tengan o no PRs
-10. **Versionado automático**: La versión se lee de package.json y se muestra en footer y console
-11. **Botones ocultos**: Config, Urgent y Quick están ocultos por CSS hasta implementar autenticación
-12. **Auto-refresh**: Cada 5 minutos (no en modo test)
-13. **Comentarios filtrados**: Los comentarios excluyen bots y Linear bot automáticamente
-14. **Comentarios desglosados**: Se muestran comentarios generales + comentarios de código por separado (ambos filtrados)
-15. **Exclusión de bots**: Los usuarios bot (tipo "Bot" o con "[bot]" en el nombre) se excluyen automáticamente de assignees, reviewers y comentarios
-16. **Exclusión de Linear**: Los comentarios de Linear bot se excluyen automáticamente del conteo
-17. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
-18. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
+1. **Autenticación obligatoria**: Todos los usuarios deben autenticarse con GitHub OAuth antes de acceder
+2. **Whitelist configurable**: Se puede restringir acceso a usuarios específicos mediante variable de entorno
+3. **Sesión persistente**: El token JWT se guarda en localStorage y persiste 7 días
+4. **Protected routes**: App.tsx maneja autenticación a nivel raíz antes de renderizar dashboard
+5. **El assignee es el revisor principal**: El assignee en este equipo representa al revisor principal que debe aprobar la PR, no a quien trabaja en ella
+6. **El reviewer NO afecta los colores**: Solo el assignee determina el color del borde
+7. **Los filtros son inclusivos**: Mostrar items que cumplan con AL MENOS UNO de los filtros activos
+8. **Tooltips inmediatos**: Siempre usar `delayDuration={0}` en TooltipProvider para tooltips instantáneos
+9. **Stats cards con tooltips**: Todas las stats cards tienen tooltips explicativos que aparecen instantáneamente
+10. **Colores consistentes**: Usar la paleta amber para "patata", yellow para warnings, red para críticos
+11. **Accesibilidad**: Checkboxes dentro de labels, tooltips descriptivos, colores con buen contraste
+12. **Stats cards clickeables**: Comportamiento exclusivo (click = solo ese filtro activo)
+13. **Repositorios siempre visibles**: El selector muestra todos los repos configurados, tengan o no PRs
+14. **Versionado automático**: La versión se lee de package.json y se muestra en footer y console
+15. **Botones ahora visibles**: Config, Urgent y Quick ahora están visibles tras implementar autenticación
+16. **Auto-refresh**: Cada 5 minutos (no en modo test)
+17. **Comentarios filtrados**: Los comentarios excluyen bots y Linear bot automáticamente
+18. **Comentarios desglosados**: Se muestran comentarios generales + comentarios de código por separado (ambos filtrados)
+19. **Exclusión de bots**: Los usuarios bot (tipo "Bot" o con "[bot]" en el nombre) se excluyen automáticamente de assignees, reviewers y comentarios
+20. **Exclusión de Linear**: Los comentarios de Linear bot se excluyen automáticamente del conteo
+21. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
+22. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
+23. **Branch deploys**: Development branch tiene su propia URL de staging para testing
 
 ## Próximas Mejoras Potenciales
 
-- [ ] Sistema de autenticación con contraseña
-- [ ] Reactivar botones de configuración y acciones (tras autenticación)
+- [x] Sistema de autenticación con GitHub OAuth
+- [x] Reactivar botones de configuración y acciones (tras autenticación)
+- [ ] Filtro "Mis PRs" (mostrar solo PRs donde soy assignee o reviewer)
+- [ ] Vista por usuario (resumen de PRs asignadas a cada miembro)
 - [ ] Notificaciones push cuando una PR se vuelve crítica
 - [ ] Métricas de tiempo de respuesta por equipo
 - [ ] Integración con Slack

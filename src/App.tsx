@@ -5,9 +5,20 @@ import { Dashboard } from './components/Dashboard';
 import { ConfigPanel } from './components/ConfigPanel';
 import { LoginScreen } from './components/LoginScreen';
 import { AuthCallback } from './components/AuthCallback';
-import { UserMenu } from './components/UserMenu';
+import { MyPRsView } from './components/MyPRsView';
+import { TeamView } from './components/TeamView';
+import { AppSidebar } from './components/app-sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/sidebar';
 import { Button } from './components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from './components/ui/breadcrumb';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs, dummyRepositories } from './utils/dummyData';
 import { useAuthStore } from './stores/authStore';
@@ -25,6 +36,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const { isAuthenticated, token, user, logout } = useAuthStore();
+  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team'>('all');
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
@@ -266,51 +278,39 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="shadow" style={{ backgroundColor: '#ffeb9e' }}>
-        <div className="max-w-7xl mx-auto py-6 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src="/hot-potato-logo.png"
-              alt="Hot Potato Logo"
-              className="h-16 w-16 object-contain transition-transform duration-300 hover:animate-wiggle cursor-pointer"
-              onClick={() => setIsGifModalOpen(true)}
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                <span className="text-red-600">Hot</span>Potato PR Dashboard
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                PRs sin asignar son como patatas calientes - pásalas rápido!
-              </p>
-            </div>
+    <SidebarProvider>
+      <AppSidebar
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        onOpenConfig={() => setIsConfigOpen(true)}
+        onOpenGifModal={() => setIsGifModalOpen(true)}
+        onOpenHelp={() => setIsHelpModalOpen(true)}
+      />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="mr-2" />
+          <div className="flex items-center gap-2 flex-1">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink className="cursor-pointer">
+                    {(currentView === 'all' || currentView === 'my-prs') ? 'Pull Requests' : 'Equipo'}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>
+                    {currentView === 'all' && 'Todas las PRs'}
+                    {currentView === 'my-prs' && 'Mis PRs'}
+                    {currentView === 'team' && 'Vista por Usuario'}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Help Button */}
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setIsHelpModalOpen(true)}
-                    variant="secondary"
-                    size="icon"
-                    className="bg-amber-700 hover:bg-amber-800 text-white"
-                  >
-                    <BookOpen className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Leyenda de colores</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {/* User Menu with Config inside */}
-            <UserMenu onOpenConfig={() => setIsConfigOpen(true)} />
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-7xl mx-auto py-6 px-4">
+        <main className="flex flex-1 flex-col gap-4 p-4">
         {isTestMode && (
           <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-center">
             <p className="text-blue-800 font-semibold">
@@ -346,26 +346,33 @@ function AppContent() {
             )}
           </div>
         ) : (
-          <Dashboard
-            prs={prs}
-            isLoading={isFetching && !isTestMode}
-            onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
-            onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
-            onRefresh={() => refetch()}
-            isProcessingUrgent={(pr) => processingPRs.has(`${getPRKey(pr)}-urgent`)}
-            isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
-            maxDaysOpen={config.maxDaysOpen}
-            configuredRepositories={config.repositories}
-          />
+          <>
+            {currentView === 'all' && (
+              <Dashboard
+                prs={prs}
+                isLoading={isFetching && !isTestMode}
+                onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
+                onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
+                onRefresh={() => refetch()}
+                isProcessingUrgent={(pr) => processingPRs.has(`${getPRKey(pr)}-urgent`)}
+                isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
+                maxDaysOpen={config.maxDaysOpen}
+                configuredRepositories={config.repositories}
+              />
+            )}
+            {currentView === 'my-prs' && <MyPRsView />}
+            {currentView === 'team' && <TeamView />}
+          </>
         )}
-      </main>
 
-      <footer className="max-w-7xl mx-auto py-6 px-4 text-center text-sm text-gray-500">
-        <p>
-          Hot Potato PR Dashboard v{packageJson.version}
-          {!isTestMode && ' • Actualización automática cada 5 minutos'}
-        </p>
-      </footer>
+        <footer className="py-4 text-center text-sm text-gray-500 border-t">
+          <p>
+            Hot Potato PR Dashboard v{packageJson.version}
+            {!isTestMode && ' • Actualización automática cada 5 minutos'}
+          </p>
+        </footer>
+      </main>
+      </SidebarInset>
 
       {/* Config Modal */}
       <ConfigPanel
@@ -483,7 +490,7 @@ function AppContent() {
           </div>
         </div>
       )}
-    </div>
+    </SidebarProvider>
   );
 }
 

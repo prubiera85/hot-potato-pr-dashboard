@@ -8,10 +8,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sidebar Navigation (Shadcn sidebar-07)**
+  - Collapsible sidebar with icon mode
+  - Logo de patata clickeable con animación wiggle y popup de GIF
+  - Sección "Pull Requests" con vistas "Todas las PRs" y "Mis PRs"
+  - Sección "Equipo" con vista "Vista por Usuario"
+  - NavUser component estilo sidebar-07 en el footer con dropdown mejorado
+  - Botón de "Leyenda de colores" en el footer del sidebar
+  - Responsive: drawer móvil con Sheet component
+  - Variant "inset" para contenido principal con bordes redondeados y sombra
+- **Breadcrumbs Navigation**
+  - Navegación de migas de pan dinámica en el header
+  - Muestra la sección actual (Pull Requests / Equipo) y la vista específica
+  - Reemplaza el título "HotPotato PR Dashboard" duplicado
+- **Theme Configuration**
+  - Theme de Shadcn configurado con yellow como color primario
+  - Colores consistentes para modo light y dark
+  - Sidebar con colores yellow para estados activos
+- **Placeholder Views**
+  - MyPRsView component para vista de "Mis PRs"
+  - TeamView component para vista por usuario del equipo
+- **GitHub OAuth Authentication System**
+  - Complete OAuth flow using existing GitHub App (User-to-Server tokens)
+  - JWT-based session management with 7-day token expiration
+  - LoginScreen component with GitHub sign-in button
+  - AuthCallback component to process OAuth callback
+  - UserMenu component with avatar, user info, and logout
+  - Zustand store for authentication state with localStorage persistence
+  - Protected routes implementation in App.tsx
+  - Session verification on app load
+  - Auth middleware for protecting serverless functions
+- **Authentication Serverless Functions**
+  - `/api/auth-login` - Initiates OAuth flow
+  - `/api/auth-callback` - Processes OAuth callback and generates JWT
+  - `/api/auth-me` - Verifies current session
+  - JWT utilities and middleware for token management
+- **User Whitelist System**
+  - Optional whitelist via `ALLOWED_GITHUB_USERS` environment variable
+  - Restricts access to specific GitHub users
+  - Case-insensitive username validation
+- **Development Environment**
+  - Branch deploys configuration for `development` branch
+  - Staging URL: `https://development--hot-potato-pr-dashboard.netlify.app`
+  - Separate callback URL configuration for dev environment
+- **UI Improvements**
+  - Config button moved into UserMenu dropdown
+  - User avatar with GitHub profile picture in header
+  - Dropdown menu with profile, settings, and logout options
+  - Better organized header layout
 - Tooltips to all stat cards explaining what each filter does (instant display with delayDuration={0})
 - Comment filtering to exclude bot comments (Linear bot, and other bots)
 
 ### Changed
+- **App.tsx** - Refactored to support sidebar navigation
+  - Integrated SidebarProvider and navigation state management
+  - Added breadcrumbs navigation
+  - Conditional view rendering based on currentView state
+  - Removed help button from header (now in sidebar)
+- **Header Layout**
+  - Replaced title with breadcrumbs navigation
+  - Simplified to only show SidebarTrigger and breadcrumbs
+  - Removed leyenda button (now in sidebar)
+- **Sidebar Components**
+  - Renamed "PRs" section to "Pull Requests" for clarity
+  - UserMenu replaced by NavUser component with better UX
+  - Logo de patata centrado y redimensionado para modo colapsado
+- **UI Components**
+  - Added DropdownMenuGroup to dropdown-menu component
+  - Added breadcrumb component from Shadcn
+  - Added separator component from Shadcn
+  - Created use-mobile hook for responsive behavior
 - Renamed filter "Sin asignar" to "Asignación incompleta" for better clarity
 - Updated tooltip for "Sin assignee" to clarify it refers to the main reviewer who approves the PR
 - Comment counts now fetch individual comments and filter out bot authors (Linear, GitHub bots, etc.)
@@ -19,6 +85,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - PR authors are now correctly excluded from the reviewers list when they submit reviews on their own PRs
 - Comment counts no longer include bot comments (Linear bot specifically excluded)
+
+### Security
+- **Authentication required for all access** - No more open access to the dashboard
+- **JWT tokens with expiration** - 7-day token lifetime
+- **Optional user whitelist** - Restrict access to authorized team members only
+- **HTTPS enforced** - All authentication flows use secure connections
+- **Secrets in environment variables** - No secrets in codebase
+- Config, Urgent, and Quick buttons now visible (previously hidden, now protected by auth)
+
+### Removed
+- CSS classes for hiding Config, Urgent, and Quick buttons (no longer needed with auth)
 
 ## [1.1.1] - 2025-01-20
 
