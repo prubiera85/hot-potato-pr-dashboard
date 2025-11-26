@@ -155,20 +155,45 @@ Los usuarios con rol **admin** o **superadmin** pueden agregar usuarios dinámic
 
 1. Ir a **Zona Admin > Gestión de Roles**
 2. Click en **"Agregar Usuario"**
-3. Ingresar uno o varios usuarios de GitHub (separados por comas)
-4. Seleccionar el rol: **admin** o **developer**
-5. Click en **"Agregar"**
+3. Se abre un **dialog modal** con un formulario
+4. Ingresar uno o varios usuarios de GitHub (separados por comas)
+5. Seleccionar el rol: **admin** o **developer**
+6. Click en **"Agregar"**
+7. El listado se **actualiza automáticamente** mostrando los nuevos usuarios
 
 **Ejemplo**: `user1, user2, user3`
+
+**Características**:
+- ✅ Actualización instantánea del listado (sin recargar página)
+- ✅ Soporte para múltiples usuarios simultáneos
+- ✅ Validación en tiempo real
+- ✅ Feedback visual durante el proceso (loading states)
 
 ### Eliminar Usuarios
 
 Solo se pueden eliminar usuarios **admin** y **developer** desde la UI:
 
+**Restricciones**:
 - ✅ Admin puede eliminar: otros admins y developers
 - ✅ Superadmin puede eliminar: admins y developers
 - ❌ Nadie puede eliminar: superadmins
 - ❌ No puedes eliminarte a ti mismo
+
+**Proceso de eliminación**:
+1. Click en el icono de papelera (🗑️) junto al usuario
+2. Se abre un **AlertDialog de confirmación** (Shadcn/ui)
+3. El dialog explica las consecuencias:
+   - "Esta acción eliminará el acceso del usuario @username"
+   - "El usuario quedará como 'guest' en su próximo login"
+4. Confirmar con el botón rojo **"Eliminar"** o cancelar
+5. El listado se **actualiza automáticamente** tras la eliminación
+
+**Características**:
+- ✅ Confirmación profesional con AlertDialog (no `confirm()` nativo)
+- ✅ Actualización instantánea del listado
+- ✅ Mensaje descriptivo de las consecuencias
+- ✅ Botones con estados de loading
+- ✅ Diseño consistente con el resto de la aplicación
 
 ### Roles por Defecto
 
@@ -365,12 +390,86 @@ La primera vez que se accede a la aplicación después del deploy:
 
 **Frontend**:
 - `src/hooks/usePermissions.ts` - Hooks para verificar permisos
-- `src/components/RoleManagementView.tsx` - UI de gestión de roles
+- `src/components/RoleManagementView.tsx` - UI de gestión de roles con dialog y confirmaciones
 - `src/components/app-sidebar.tsx` - Navegación condicional por rol
+- `src/components/ui/alert-dialog.tsx` - Componente AlertDialog de Shadcn para confirmaciones
+
+---
+
+## UX y Mejores Prácticas
+
+### Actualización Automática del Listado
+
+El sistema utiliza **React Query** con `refetchQueries` para garantizar que el listado de usuarios siempre esté actualizado:
+
+```typescript
+onSuccess: async () => {
+  // Refetch immediately to update the list
+  await queryClient.refetchQueries({ queryKey: ['user-roles'] });
+}
+```
+
+**Beneficios**:
+- ✅ No requiere recargar la página
+- ✅ Feedback inmediato al usuario
+- ✅ Previene datos desincronizados
+- ✅ Mejor experiencia de usuario
+
+### Confirmación de Eliminación
+
+Se usa **AlertDialog de Shadcn/ui** en lugar de `window.confirm()`:
+
+**Ventajas del AlertDialog**:
+- 🎨 Diseño consistente con el resto de la aplicación
+- 📱 Responsive y accesible
+- 💬 Permite mensajes descriptivos y formateo
+- 🔘 Botones personalizables con estados
+- ⌨️ Soporte de teclado (Escape para cancelar)
+- 🎯 Mejor UX que el dialog nativo del navegador
+
+**Estructura del dialog**:
+```tsx
+<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+      <AlertDialogDescription>
+        Esta acción eliminará el acceso del usuario @{userToDelete}.
+        El usuario quedará como "guest" en su próximo login.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={confirmDelete}
+        className="bg-red-600 hover:bg-red-700"
+      >
+        Eliminar
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+### Estados de Loading
+
+Todos los botones muestran estados de carga durante operaciones:
+- **"Agregando..."** mientras se agregan usuarios
+- **"Eliminando..."** mientras se elimina un usuario
+- Botones deshabilitados durante operaciones
+- Previene clics múltiples accidentales
 
 ---
 
 ## Roadmap
+
+### Mejoras implementadas recientemente ✅
+
+- [x] **AlertDialog de Shadcn**: Confirmaciones profesionales en lugar de `confirm()` nativo
+- [x] **Actualización automática**: Listado se actualiza instantáneamente tras agregar/eliminar usuarios
+- [x] **React Query refetch**: Uso de `refetchQueries` para forzar actualizaciones inmediatas
+- [x] **Estados de loading**: Feedback visual durante operaciones asíncronas
+- [x] **Mensajes descriptivos**: Explicación clara de las consecuencias al eliminar usuarios
 
 ### Futuras mejoras planificadas
 
@@ -384,4 +483,4 @@ La primera vez que se accede a la aplicación después del deploy:
 ---
 
 **Última actualización**: Enero 2025
-**Versión del documento**: 1.0
+**Versión del documento**: 1.1
