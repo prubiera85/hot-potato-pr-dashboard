@@ -35,13 +35,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Acceso abierto habilitado**: Se eliminó la restricción de whitelist, ahora cualquier usuario con cuenta de GitHub puede hacer login
 - **Botones de urgente/rápida**: Ahora solo visibles para developer, admin y superadmin
-- **Optimistic updates para botones urgente/rápida**: Actualización instantánea sin refresh de toda la lista
-  - Cambio inmediato del estado visual del botón (relleno/outline)
+- **Optimistic updates completos**: Actualización instantánea de todos los elementos sin refresh de lista
+  - **Selectores de assignees/reviewers**: Avatares se actualizan inmediatamente
+  - **Botones urgente/rápida**: Cambio inmediato del estado visual (relleno/outline)
+  - **Etiquetas (labels)**: Aparecen/desaparecen instantáneamente al toggle urgente/rápida
   - Sin saltos de scroll ni recargas innecesarias
+  - QueryKey consistency en todas las mutaciones
   - Rollback automático en caso de error
+  - Console logging detallado para debugging
 - **Botón de configuración**: Ahora solo visible para admin y superadmin
 - Documentación actualizada en CLAUDE.md para reflejar el modo de acceso abierto y sistema de roles
 - JWT ahora incluye el campo `role` del usuario
+
+### Fixed
+- Etiquetas de urgente/rápida ahora se actualizan correctamente en el optimistic update
+- Array de labels se sincroniza con los estados isUrgent/isQuick
 
 ## [2.0.0] - 2025-01-26
 

@@ -588,18 +588,76 @@ Componente raíz que maneja:
 - Estado global de la aplicación
 - Modales (Config, Help, GIF)
 - Query de PRs y configuración
-- Mutaciones para toggle de urgent/quick
-- **Mutaciones para assignees/reviewers con optimistic updates**
+- **Mutaciones con optimistic updates completos**:
+  - Toggle urgent/quick (con actualización de labels)
+  - Assignees (agregar/remover)
+  - Reviewers (agregar/remover)
 - Header con botones de ayuda y configuración
 - Versionado dinámico desde package.json
 - Console log con estilo y emoji de patata
 
-**Optimistic Updates para Assignees/Reviewers:**
-- `onMutate`: Actualiza inmediatamente la UI antes de la respuesta de la API
-- `onSuccess`: Mantiene el cambio optimista (NO invalida queries)
-- `onError`: Rollback automático al estado anterior
-- QueryKey consistente: `['prs', isTestMode]` en todos los lugares
-- Console logs con emojis para debugging (🔄 📸 🎯 ➕ ➖ ✅ ❌)
+**Optimistic Updates - Patrón Completo:**
+
+Todas las mutaciones siguen el mismo patrón para lograr UX instantánea sin recargas de lista:
+
+1. **onMutate** (antes del API call):
+   - Cancela queries en curso: `await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] })`
+   - Toma snapshot del estado actual: `const previousPRs = queryClient.getQueryData(['prs', isTestMode])`
+   - Actualiza optimísticamente los datos: `queryClient.setQueryData(['prs', isTestMode], (old) => {...})`
+   - Retorna el snapshot: `return { previousPRs }`
+
+2. **onSuccess** (después del API call exitoso):
+   - **NO llama `invalidateQueries`** (esto causaría refresh de toda la lista)
+   - Solo limpia el estado de procesamiento
+   - Mantiene el cambio optimista que ya está en la UI
+
+3. **onError** (si el API call falla):
+   - Restaura el snapshot: `queryClient.setQueryData(['prs', isTestMode], context.previousPRs)`
+   - Limpia el estado de procesamiento
+   - El usuario ve un rollback suave sin perder su posición
+
+**Mutaciones Implementadas:**
+
+**toggleUrgentMutation:**
+- Actualiza `isUrgent` (boolean)
+- Actualiza array de `labels`:
+  - Si activando: agrega `{id: Date.now(), name: 'urgent', color: 'd73a4a'}`
+  - Si desactivando: remueve el label 'urgent'
+- Endpoint: `/api/toggle-urgent`
+
+**toggleQuickMutation:**
+- Actualiza `isQuick` (boolean)
+- Actualiza array de `labels`:
+  - Si activando: agrega `{id: Date.now(), name: 'quick', color: 'fbca04'}`
+  - Si desactivando: remueve el label 'quick'
+- Endpoint: `/api/toggle-quick`
+
+**toggleAssigneeMutation:**
+- Agrega/remueve usuario del array `assignees`
+- Actualiza `missingAssignee` (boolean)
+- Incluye `avatar_url` para mostrar inmediatamente
+- Endpoint: `/api/assign-assignees`
+
+**toggleReviewerMutation:**
+- Agrega/remueve usuario del array `requested_reviewers`
+- Actualiza `missingReviewer` (boolean)
+- Incluye `avatar_url` para mostrar inmediatamente
+- Endpoint: `/api/assign-reviewers`
+
+**QueryKey Consistency:**
+- CRÍTICO: Todas las operaciones deben usar `['prs', isTestMode]`
+- Inconsistencias en queryKey causan que optimistic updates no funcionen
+- Se usa en: useQuery, cancelQueries, getQueryData, setQueryData
+
+**Console Logging:**
+- Emojis para identificar rápidamente el tipo de evento:
+  - 🔄 onMutate iniciado
+  - 📸 Snapshot tomado
+  - 🎯 Operación detectada (add/remove)
+  - ➕ Agregando elemento
+  - ➖ Removiendo elemento
+  - ✅ Éxito (mantiene optimistic update)
+  - ❌ Error (rollback)
 
 ## Características Clave
 
@@ -877,6 +935,10 @@ Cuando se acumula un conjunto significativo de cambios en `[Unreleased]`:
 21. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
 22. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
 23. **Branch deploys**: Development branch tiene su propia URL de staging para testing
+24. **Optimistic updates completos**: Todas las mutaciones (urgent, quick, assignees, reviewers) usan optimistic updates
+25. **No invalidateQueries en onSuccess**: CRÍTICO - esto causaría refresh de toda la lista, arruinando la UX
+26. **QueryKey consistency**: Todas las operaciones React Query deben usar `['prs', isTestMode]` exactamente
+27. **Labels sincronizados**: Los arrays de labels se actualizan junto con isUrgent/isQuick para mostrar badges instantáneamente
 
 ## Próximas Mejoras Potenciales
 
