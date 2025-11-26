@@ -113,18 +113,72 @@ export function PRCard({
   return (
     <div className={`relative bg-white rounded-lg mb-4 shadow-sm hover:shadow-md transition-shadow border-2 ${status.borderColor} border-l-8 ${status.borderLeftColor}`}>
       <div className="p-4">
-        <div className="flex items-start gap-4">
-          {/* Main content */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              {status.icon}
-              <h4 className="text-md font-semibold text-gray-700">
-              {pr.repo.name}
-              </h4>
+        <div className="flex gap-4">
+          {/* Left side - Main content */}
+          <div className="flex-1 flex flex-col">
+            {/* Header: Repo name + Urgent/Quick buttons */}
+            <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                {status.icon}
+                <h4 className="text-md font-semibold text-gray-700">
+                  {pr.repo.name}
+                </h4>
+              </div>
+
+              {/* Urgent/Quick buttons - Solo visible para developer, admin y superadmin */}
+              {canToggleUrgentQuick && (
+                <div className="flex gap-2">
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => onToggleUrgent(pr)}
+                          disabled={isProcessingUrgent}
+                          variant={pr.isUrgent ? "destructive" : "outline"}
+                          size="sm"
+                        >
+                          {isProcessingUrgent ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Flame fill={pr.isUrgent ? 'currentColor' : 'none'} />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => onToggleQuick(pr)}
+                          disabled={isProcessingQuick}
+                          variant={pr.isQuick ? "default" : "outline"}
+                          size="sm"
+                          className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                        >
+                          {isProcessingQuick ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 mb-2 ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+            {/* Center: PR title, info, comments */}
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 <a
                   href={pr.html_url}
                   target="_blank"
@@ -134,60 +188,41 @@ export function PRCard({
                   #{pr.number} - {pr.title}
                 </a>
               </h3>
-            </div>
 
-            <div className="flex items-center text-sm text-gray-600 mb-3 gap-2 ml-4">
-              <span className={`inline-flex items-center gap-1 ${status.timeColor}`}>
-                <Clock className={`w-4 h-4 ${isOverMaxDays ? 'animate-ring' : ''}`} />
-                {formatTimeAgo(pr.hoursOpen)} abierta
-              </span>
-              <span>•</span>
-              <span className="text-gray-500">por {pr.user.login}</span>
-              <span>•</span>
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex items-center gap-1 text-gray-700 cursor-help">
-                      <MessageSquare className="w-4 h-4" />
-                      {pr.commentCount} comentarios
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <div className="text-xs">
-                      <div>💬 {pr.issueComments} comentarios generales</div>
-                      <div>📝 {pr.reviewComments} comentarios de código</div>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {pr.labels.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {pr.labels.map((label) => (
-                  <span
-                    key={label.id}
-                    className="px-2 py-1 text-xs rounded-full font-medium"
-                    style={{
-                      backgroundColor: `#${label.color}20`,
-                      color: `#${label.color}`,
-                      borderColor: `#${label.color}`,
-                      borderWidth: '1px',
-                    }}
-                  >
-                    {label.name}
-                  </span>
-                ))}
+              <div className="flex items-center text-sm text-gray-600 mb-2 gap-2">
+                <span className={`inline-flex items-center gap-1 ${status.timeColor}`}>
+                  <Clock className={`w-4 h-4 ${isOverMaxDays ? 'animate-ring' : ''}`} />
+                  {formatTimeAgo(pr.hoursOpen)} abierta
+                </span>
+                <span>•</span>
+                <span className="text-gray-500">por {pr.user.login}</span>
+                <span>•</span>
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-1 text-gray-700 cursor-help">
+                        <MessageSquare className="w-4 h-4" />
+                        {pr.commentCount} comentarios
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="text-xs">
+                        <div>💬 {pr.issueComments} comentarios generales</div>
+                        <div>📝 {pr.reviewComments} comentarios de código</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            )}
+            </div>
 
-            {/* Action buttons row at bottom */}
-            <div className="flex gap-2 mt-4 ml-1">
+            {/* Footer: Ver en GitHub button */}
+            <div className="flex gap-2 mt-auto pt-2">
               <Button
                 asChild
-                variant="link"
+                variant="outline"
                 size="sm"
-                className="text-blue-600 hover:text-blue-700"
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
               >
                 <a
                   href={pr.html_url}
@@ -201,18 +236,18 @@ export function PRCard({
             </div>
           </div>
 
-          {/* Right sidebar - Assignment section */}
+          {/* Right sidebar - Assignment section only */}
           <div className="w-64 flex-shrink-0 border-l border-gray-200 pl-4">
             {/* Assignees Section */}
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 min-h-[32px]">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-gray-600" />
                   <h4 className="text-sm font-semibold text-gray-700">Asignees</h4>
                 </div>
                 {pr.assignees.length === 0 ? (
-                  <div className="flex items-center gap-1 text-sm text-red-400 font-medium">
-                    <AlertCircle className="w-4 h-4" />
+                  <div className="flex items-center gap-1 text-xs text-red-400 font-medium">
+                    <AlertCircle className="w-3 h-3" />
                     <span>Sin asignar</span>
                   </div>
                 ) : (
@@ -250,15 +285,15 @@ export function PRCard({
             </div>
 
             {/* Reviewers Section */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
+            <div>
+              <div className="flex items-center justify-between mb-2 min-h-[32px]">
                 <div className="flex items-center gap-2">
                   <Eye className="w-4 h-4 text-gray-600" />
                   <h4 className="text-sm font-semibold text-gray-700">Reviewers</h4>
                 </div>
                 {pr.requested_reviewers.length === 0 && (!pr.requested_teams || pr.requested_teams.length === 0) ? (
-                  <div className="flex items-center gap-1 text-sm text-red-400 font-medium">
-                    <AlertCircle className="w-4 h-4" />
+                  <div className="flex items-center gap-1 text-xs text-red-400 font-medium">
+                    <AlertCircle className="w-3 h-3" />
                     <span>Sin reviewers</span>
                   </div>
                 ) : (
@@ -306,63 +341,7 @@ export function PRCard({
                 </div>
               )}
             </div>
-            {/* Botones de urgente y rápida Section - Solo visible para developer, admin y superadmin */}
-            {canToggleUrgentQuick && (
-              <div className="flex gap-2">
-                <TooltipProvider delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => onToggleUrgent(pr)}
-                        disabled={isProcessingUrgent}
-                        variant={pr.isUrgent ? "destructive" : "outline"}
-                        size="sm"
-                      >
-                        {isProcessingUrgent ? (
-                          <Loader2 className="animate-spin" />
-                        ) : (
-                          <>
-                            <Flame fill={pr.isUrgent ? 'currentColor' : 'none'} />
-                            <span>Urgente</span>
-                          </>
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{pr.isUrgent ? 'Quitar urgente' : 'Marcar como urgente'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => onToggleQuick(pr)}
-                        disabled={isProcessingQuick}
-                        variant={pr.isQuick ? "default" : "outline"}
-                        size="sm"
-                        className={pr.isQuick ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-                      >
-                        {isProcessingQuick ? (
-                          <Loader2 className="animate-spin" />
-                        ) : (
-                          <>
-                            <Zap fill={pr.isQuick ? 'currentColor' : 'none'} />
-                            <span>Rápida</span>
-                          </>
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{pr.isQuick ? 'Quitar rápida' : 'Marcar como rápida'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
           </div>
-          
         </div>
       </div>
     </div>

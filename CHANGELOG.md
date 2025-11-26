@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Rediseño de PRCard**: Nueva distribución de contenido más organizada y limpia
+  - **Header**: Icono + nombre del repo (izq) | Botones urgente/rápida solo iconos (der)
+  - **Centro**: Título de la PR + información (tiempo, autor, comentarios)
+  - **Footer**: Botón "Ver en GitHub" con outline
+  - **Sidebar derecho**: Solo asignaciones (Assignees y Reviewers)
+  - Labels eliminadas de la visualización (información disponible en GitHub)
+  - Borde vertical entre secciones ahora ocupa toda la altura
+  - Altura consistente en líneas de Assignees/Reviewers (32px mínimo)
+  - Texto "Sin asignar"/"Sin reviewers" más pequeño (xs)
+  - Selectores de usuarios más compactos (h-8, text-xs)
+  - Espaciado optimizado y más equilibrado
+- **Dashboard**: Añadido padding lateral (px-6) para mejor respiración del contenido
+
 ### Added
 - **Selectores de Assignees y Reviewers**: Funcionalidad completa para gestionar asignaciones de PRs
   - UserSelector component con búsqueda y multi-selección

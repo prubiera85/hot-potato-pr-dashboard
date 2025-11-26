@@ -550,15 +550,34 @@ Componente principal que contiene:
 
 ### PRCard.tsx
 
-Tarjeta individual de PR que muestra:
-- Información básica (título, número, autor)
-- Estado visual con bordes de colores
-- Tiempo abierta con icono de reloj
-- Labels de GitHub
-- Assignees y reviewers con avatares
-- **Selectores de Assignees y Reviewers** (solo para developer, admin, superadmin)
-- Botones de "Urgente" y "Rápida" (solo para developer, admin, superadmin)
+Tarjeta individual de PR con diseño organizado en tres zonas:
+
+**Layout principal:**
+- **Lado izquierdo**: Contenido de la PR (header + centro + footer)
+- **Lado derecho**: Sidebar de asignaciones (ancho fijo 256px)
+- Borde vertical entre secciones ocupa toda la altura (flex stretch)
+
+**Lado izquierdo - Header:**
+- Icono del repo + nombre del repo (izquierda)
+- Botones urgente/rápida solo con iconos (derecha)
+- Borde inferior separador
+- Solo visible para developer, admin, superadmin
+
+**Lado izquierdo - Centro:**
+- Título de la PR con link a GitHub
+- Información: tiempo abierta, autor, comentarios
 - Comentarios con tooltip descriptivo (desglose de comentarios generales vs código, filtrados sin bots)
+
+**Lado izquierdo - Footer:**
+- Botón "Ver en GitHub" con variant outline
+- Sin borde superior (espaciado con pt-2)
+
+**Lado derecho - Asignaciones:**
+- **Assignees**: Título + avatares o "Sin asignar" (texto xs)
+- **Reviewers**: Título + avatares o "Sin reviewers" (texto xs)
+- Altura consistente de 32px mínimo en líneas de título
+- Selectores compactos (h-8, text-xs)
+- Solo visible para developer, admin, superadmin
 
 **Selectores de Assignees/Reviewers:**
 - Usa el componente `UserSelector` con búsqueda y multi-selección
@@ -581,6 +600,11 @@ if (!hasAssignee) {
   }
 }
 ```
+
+**Notas importantes:**
+- Labels de GitHub NO se muestran en la card (información disponible en GitHub)
+- Estado visual determinado solo por el assignee (reviewer no afecta colores)
+- Espaciado optimizado y equilibrado entre secciones
 
 ### App.tsx
 
