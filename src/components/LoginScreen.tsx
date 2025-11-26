@@ -25,7 +25,7 @@ export function LoginScreen() {
           <img
             src="/hot-potato-logo.png"
             alt="Hot Potato Logo"
-            className="h-24 w-24 mx-auto mb-4"
+            className="h-24 w-24 mx-auto mb-4 animate-wiggle"
           />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             <span className="text-red-600">Hot</span>Potato PR Dashboard
@@ -88,18 +88,6 @@ export function LoginScreen() {
               </span>
             )}
           </Button>
-
-          {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">
-              ¿Por qué necesito iniciar sesión?
-            </h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Filtrar "Mis PRs" (donde eres autor/assignee/reviewer)</li>
-              <li>• Marcar PRs como urgentes o rápidas</li>
-              <li>• Ver tu avatar y configuración personalizada</li>
-            </ul>
-          </div>
 
           {/* Footer */}
           <div className="text-center">

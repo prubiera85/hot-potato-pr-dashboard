@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-01-26
+
 ### Added
 - **Sidebar Navigation (Shadcn sidebar-07)**
   - Collapsible sidebar with icon mode
@@ -56,6 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User avatar with GitHub profile picture in header
   - Dropdown menu with profile, settings, and logout options
   - Better organized header layout
+- **Login Screen Improvements**
+  - Infinite wiggle animation on potato logo
+  - Removed disclaimer section explaining why login is needed
+  - Cleaner, simpler login experience
+- **Auth Callback Screen**
+  - Animated potato GIF (potato-02.gif) while processing authentication
+  - Visual feedback during OAuth process
 - Tooltips to all stat cards explaining what each filter does (instant display with delayDuration={0})
 - Comment filtering to exclude bot comments (Linear bot, and other bots)
 

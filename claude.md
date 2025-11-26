@@ -4,7 +4,7 @@
 
 HotPotato PR Dashboard es una aplicación web que ayuda a gestionar Pull Requests de GitHub de manera visual e intuitiva. El concepto principal es que "las PRs sin asignar son como patatas calientes - ¡hay que pasarlas rápido!"
 
-**Versión Actual**: 1.1.1
+**Versión Actual**: 2.0.0
 
 ## Stack Tecnológico
 
