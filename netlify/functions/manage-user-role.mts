@@ -17,10 +17,10 @@ export default async (request: Request) => {
     // Verificar autenticación
     const currentUser = await requireAuth(request);
 
-    // Solo admin y superadmin pueden gestionar usuarios
+    // Solo usuarios con acceso a config (admin y superadmin) pueden gestionar usuarios
     if (currentUser.role !== 'admin' && currentUser.role !== 'superadmin') {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - requires admin or superadmin role' }),
         { status: 403, headers: { 'Content-Type': 'application/json' } }
       );
     }

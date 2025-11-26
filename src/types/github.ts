@@ -84,9 +84,8 @@ export interface UserPermissions {
   canViewDashboard: boolean;           // Todos pueden ver
   canToggleUrgentQuick: boolean;       // developer, admin, superadmin
   canManageAssignees: boolean;         // developer, admin, superadmin
-  canAccessConfig: boolean;            // admin, superadmin
+  canAccessConfig: boolean;            // admin, superadmin (incluye gestión de roles)
   canManageRepositories: boolean;      // admin, superadmin
-  canManageRoles: boolean;             // admin, superadmin
   canAccessGamification: boolean;      // solo superadmin
 }
 
@@ -104,7 +103,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageAssignees: true,
     canAccessConfig: true,
     canManageRepositories: true,
-    canManageRoles: true,
     canAccessGamification: true,
   },
   admin: {
@@ -113,7 +111,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageAssignees: true,
     canAccessConfig: true,
     canManageRepositories: true,
-    canManageRoles: true,
     canAccessGamification: false,
   },
   developer: {
@@ -122,7 +119,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageAssignees: true,
     canAccessConfig: false,
     canManageRepositories: false,
-    canManageRoles: false,
     canAccessGamification: false,
   },
   guest: {
@@ -131,7 +127,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canManageAssignees: false,
     canAccessConfig: false,
     canManageRepositories: false,
-    canManageRoles: false,
     canAccessGamification: false,
   },
 };
@@ -139,12 +134,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
 export const ROLE_DESCRIPTIONS: Record<UserRole, RoleConfig> = {
   superadmin: {
     name: 'Super Admin',
-    description: 'Acceso completo a todas las funcionalidades incluyendo gamificación',
+    description: 'Acceso completo incluyendo gamificación',
     permissions: ROLE_PERMISSIONS.superadmin,
   },
   admin: {
     name: 'Admin',
-    description: 'Gestión de roles, configuraciones y todas las opciones de developer',
+    description: 'Gestión de configuración, roles y todas las opciones de developer',
     permissions: ROLE_PERMISSIONS.admin,
   },
   developer: {

@@ -22,7 +22,7 @@ interface UserRoleInfo {
 }
 
 export function RoleManagementView() {
-  const canManageRoles = useHasPermission('canManageRoles');
+  const canAccessConfig = useHasPermission('canAccessConfig');
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
 
@@ -46,7 +46,7 @@ export function RoleManagementView() {
       const data = await response.json();
       return data.users as UserRoleInfo[];
     },
-    enabled: canManageRoles && !!token,
+    enabled: canAccessConfig && !!token,
   });
 
   // Add users mutation (can add multiple at once)
@@ -125,7 +125,7 @@ export function RoleManagementView() {
     }
   };
 
-  if (!canManageRoles) {
+  if (!canAccessConfig) {
     return (
       <div className="space-y-6">
         <div>
@@ -217,9 +217,8 @@ export function RoleManagementView() {
                           canViewDashboard: 'Ver dashboard',
                           canToggleUrgentQuick: 'Marcar urgente/rápida',
                           canManageAssignees: 'Gestionar assignees/reviewers',
-                          canAccessConfig: 'Acceder a configuración',
+                          canAccessConfig: 'Acceder a configuración y roles',
                           canManageRepositories: 'Gestionar repositorios',
-                          canManageRoles: 'Gestionar roles',
                         };
 
                         return (
