@@ -65,6 +65,17 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage', // localStorage key
+      version: 1, // Add version to trigger migration when structure changes
+      migrate: (persistedState: any, version: number) => {
+        // If old version or no version, rebuild permissions from user role
+        if (version === 0 || !version) {
+          const state = persistedState as AuthState;
+          if (state.user) {
+            state.permissions = ROLE_PERMISSIONS[state.user.role];
+          }
+        }
+        return persistedState as AuthState;
+      },
     }
   )
 );
