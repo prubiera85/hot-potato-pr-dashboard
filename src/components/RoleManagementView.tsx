@@ -279,7 +279,7 @@ export function RoleManagementView() {
               <p className="text-gray-500 text-center py-4">No hay usuarios configurados</p>
             ) : (
               <div className="space-y-2">
-                {usersData.map((user) => (
+                {usersData.filter(user => user && user.username && user.role).map((user) => (
                   <div
                     key={user.username}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -291,7 +291,7 @@ export function RoleManagementView() {
                       <div>
                         <p className="font-medium text-gray-900">@{user.username}</p>
                         <p className="text-sm text-gray-500">
-                          {ROLE_DESCRIPTIONS[user.role]?.name || user.role}
+                          {ROLE_DESCRIPTIONS[user.role]?.name || user.role || 'guest'}
                         </p>
                       </div>
                     </div>
