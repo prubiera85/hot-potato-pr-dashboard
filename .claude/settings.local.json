@@ -31,7 +31,8 @@
       "Bash(npx shadcn@latest add:*)",
       "WebFetch(domain:www.shadcn.io)",
       "mcp__shadcn__getComponent",
-      "mcp__shadcn__getComponents"
+      "mcp__shadcn__getComponents",
+      "Bash(git merge development -m \"$(cat <<''EOF''\nMerge branch ''development'' into main\n\nFeatures:\n- Sistema de notificaciones con Sonner (toasts de Shadcn/ui)\n- Indicadores visuales de entorno de desarrollo (badges)\n- Logs optimizados (solo errores con detalles completos)\n- Vista \"Mis PRs\" con secciones colapsables\n- Sistema de roles de usuario (superadmin, admin, developer, guest)\n- Gestión completa de assignees y reviewers con optimistic updates\n- Autenticación GitHub OAuth con JWT\n- Sidebar navigation (Shadcn sidebar-07)\n- Breadcrumbs dinámicos\n- Multiple vistas: Dashboard, My PRs, Team Assigned, Team Created, Roles, Gamification\n- Auto-detección de entorno (development vs production)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
