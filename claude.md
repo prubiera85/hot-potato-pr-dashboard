@@ -25,11 +25,16 @@ src/
 │   ├── PRCard.tsx        # Card individual
 │   └── Auth*.tsx         # Login/Callback
 ├── stores/authStore.ts   # Zustand + localStorage
+├── utils/
+│   └── env.ts            # Detección de entorno (dev/prod)
+├── vite-env.d.ts         # Tipos para variables de Netlify
 └── App.tsx               # Root + protected routes
 
 netlify/functions/
 ├── auth-*.mts            # OAuth flow
 └── auth/{jwt,middleware}.mts
+
+vite.config.ts            # Inyecta variables de entorno (__BRANCH__, __CONTEXT__)
 ```
 
 ## Sistema de Colores
@@ -48,6 +53,28 @@ netlify/functions/
 - Inactiva: Gris (`bg-gray-100`) + 60% opacidad
 - Total PRs (marrón), Urgentes (rojo), Rápidas (amarillo), Sin assignee/reviewer (naranjas)
 - Tooltips instantáneos (`delayDuration={0}`)
+
+## Detección de Entorno
+
+**Sistema de badges de desarrollo:**
+- Badge "🚧 DEV" en header (visible solo en development)
+- Texto completo en footer con nombre de rama
+- Detección automática mediante variables de Netlify
+
+**Variables de entorno (inyectadas en build time):**
+- `__BRANCH__`: Nombre de la rama Git (ej: "development", "main", "local")
+- `__CONTEXT__`: Contexto de Netlify ("production", "branch-deploy", "local")
+
+**Helpers (`utils/env.ts`):**
+- `isDevelopmentBuild()`: true si branch !== "main"
+- `getBranchName()`: Devuelve nombre de rama actual
+- `getBuildContext()`: Devuelve contexto de build
+
+**Configuración:**
+- `vite.config.ts`: Inyecta `process.env.BRANCH` y `process.env.CONTEXT`
+- `vite-env.d.ts`: Tipos TypeScript para variables globales
+- Funciona automáticamente en Netlify (variables nativas)
+- En local: muestra "local" como rama
 
 ## Autenticación GitHub OAuth
 
@@ -261,6 +288,7 @@ Ambas con contador, estado independiente, optimistic updates
 9. **Comentarios filtrados**: Excluye bots + Linear automáticamente
 10. **Auto-refresh**: 5 min (no en test mode)
 11. **Favicon**: `/potato-ico.ico`
+12. **Badges de entorno**: Solo visibles en `development`, ocultos automáticamente en `main`
 
 ## Animaciones
 

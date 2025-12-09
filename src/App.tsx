@@ -20,11 +20,13 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from './components/ui/breadcrumb';
+import { Badge } from './components/ui/badge';
 import { Toaster } from './components/ui/sonner';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs, dummyRepositories } from './utils/dummyData';
 import { useAuthStore } from './stores/authStore';
 import { verifySession } from './utils/auth';
+import { isDevelopmentBuild, getBranchName } from './utils/env';
 import packageJson from '../package.json';
 
 const queryClient = new QueryClient({
@@ -646,6 +648,11 @@ function AppContent() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            {isDevelopmentBuild() && (
+              <Badge variant="outline" className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-300 font-semibold">
+                🚧 DEV
+              </Badge>
+            )}
           </div>
         </header>
 
@@ -778,6 +785,9 @@ function AppContent() {
         <footer className="py-4 text-center text-sm text-gray-500 border-t">
           <p>
             Hot Potato PR Dashboard v{packageJson.version}
+            {isDevelopmentBuild() && (
+              <span className="text-yellow-600 font-semibold"> • 🚧 Development Build ({getBranchName()})</span>
+            )}
             {!isTestMode && ' • Actualización automática cada 5 minutos'}
           </p>
         </footer>
