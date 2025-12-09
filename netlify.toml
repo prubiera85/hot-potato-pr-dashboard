@@ -3,6 +3,13 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# Branch deploys - Deploy automático del branch 'development' como staging
+[context.development]
+  command = "npm run build"
+
+[context.development.environment]
+  NODE_ENV = "development"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import type { DashboardConfig, Repository } from '../types/github';
 import { Modal } from './Modal';
 import { Button } from './ui/button';
@@ -29,11 +30,13 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving, isTestM
   }, [config]);
 
   const handleSave = () => {
-    onSave({
+    const configToSave = {
       assignmentTimeLimit: timeLimit,
       maxDaysOpen: maxDaysOpen,
       repositories,
-    });
+    };
+
+    onSave(configToSave);
     onClose();
   };
 
@@ -74,29 +77,35 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving, isTestM
     const parsed = parseRepoInput(newRepoInput);
 
     if (!parsed) {
-      setValidationError(
-        '❌ Formato inválido.\n\n' +
-        '✅ Formatos aceptados:\n' +
-        '  • URL completa: https://github.com/owner/repo\n' +
-        '  • Formato corto: owner/repo\n\n' +
-        'Ejemplos válidos:\n' +
-        '  • https://github.com/facebook/react\n' +
-        '  • facebook/react'
-      );
+      console.error('❌ Error al parsear repositorio:', {
+        input: newRepoInput,
+        error: 'Formato inválido',
+        expected: ['https://github.com/owner/repo', 'owner/repo'],
+        received: newRepoInput
+      });
+      toast.error('Formato inválido. Usa: owner/repo o URL completa de GitHub');
       return;
     }
+
+    const repoFullName = `${parsed.owner}/${parsed.name}`;
 
     // Check if already exists
     const exists = repositories.some(
       (r) => r.owner === parsed.owner && r.name === parsed.name
     );
     if (exists) {
-      setValidationError(`⚠️ El repositorio ${parsed.owner}/${parsed.name} ya está en la lista`);
+      console.warn('⚠️ Repositorio duplicado:', {
+        repository: repoFullName,
+        error: 'El repositorio ya existe en la configuración',
+        currentRepos: repositories.map(r => `${r.owner}/${r.name}`)
+      });
+      toast.warning(`El repositorio ${repoFullName} ya está en la lista`);
       return;
     }
 
     // Validate with backend
     setIsValidating(true);
+
     try {
       const response = await fetch('/api/validate-repo', {
         method: 'POST',
@@ -118,24 +127,49 @@ export function ConfigPanel({ isOpen, onClose, config, onSave, isSaving, isTestM
         ]);
         setNewRepoInput('');
         setValidationError(null);
+        toast.success(`Repositorio ${repoFullName} agregado y validado`);
       } else {
-        setValidationError(result.error || 'Error al validar el repositorio');
+        console.error('❌ Validación fallida en backend:', {
+          repository: repoFullName,
+          responseStatus: response.status,
+          error: result.error,
+          details: result
+        });
+        const errorMsg = result.error || 'Error al validar el repositorio';
+        setValidationError(errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
-      setValidationError('⚠️ Error al validar el repositorio. Intenta de nuevo.');
+      console.error('❌ Error de red al validar repositorio:', {
+        repository: repoFullName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      const errorMsg = 'Error de conexión al validar el repositorio';
+      setValidationError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsValidating(false);
     }
   };
 
   const handleToggleRepo = (index: number) => {
+    const repo = repositories[index];
+    const repoFullName = `${repo.owner}/${repo.name}`;
+    const newState = !repo.enabled;
+
     const updated = [...repositories];
-    updated[index].enabled = !updated[index].enabled;
+    updated[index].enabled = newState;
     setRepositories(updated);
+    toast.success(`${repoFullName} ${newState ? 'habilitado' : 'deshabilitado'}`);
   };
 
   const handleRemoveRepo = (index: number) => {
+    const repoToRemove = repositories[index];
+    const repoFullName = `${repoToRemove.owner}/${repoToRemove.name}`;
+
     setRepositories(repositories.filter((_, i) => i !== index));
+    toast.success(`Repositorio ${repoFullName} eliminado`);
   };
 
   return (

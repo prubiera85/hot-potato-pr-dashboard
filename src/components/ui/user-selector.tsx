@@ -52,13 +52,13 @@ export function UserSelector({
       onOpenChange={setOpen}
       className={className}
     >
-      <TagsTrigger className="h-10 justify-start">
+      <TagsTrigger className="h-8 justify-start text-xs">
         {selectedUsers.length > 0 ? (
-          <span className="text-sm px-2">
+          <span className="px-2">
             {selectedUsers.length} seleccionado{selectedUsers.length !== 1 ? 's' : ''}
           </span>
         ) : (
-          <span className="text-sm text-muted-foreground px-2">{placeholder}</span>
+          <span className="text-muted-foreground px-2">{placeholder}</span>
         )}
       </TagsTrigger>
 
@@ -91,7 +91,7 @@ export function UserSelector({
                     <span>{user.login}</span>
                   </div>
                   {isSelected && (
-                    <Check className="h-4 w-4 text-primary" />
+                    <Check className="h-4 w-4 text-gray-900" />
                   )}
                 </TagsItem>
               );

@@ -8,10 +8,182 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sistema de notificaciones con Sonner**: Implementación de toasts de Shadcn/ui en lugar de alerts nativos
+  - Toasts de éxito para operaciones completadas (agregar, eliminar, habilitar/deshabilitar repos)
+  - Toasts de error para validaciones fallidas
+  - Toasts de advertencia para casos como repositorios duplicados
+  - Estilos personalizados con colores distintivos (verde, rojo, amarillo)
+- **Indicador de entorno de desarrollo**: Badges visuales para identificar builds de development
+  - Badge "🚧 DEV" en el header junto a los breadcrumbs (amarillo)
+  - Texto completo en el footer con nombre de rama
+  - Solo visible en rama `development`, oculto automáticamente en `main`
+  - Detección automática de entorno mediante variables de Netlify
+- **Vista "Mis PRs"**: Nueva sección para gestionar PRs personales
+  - Dos secciones independientes con contador de PRs
+  - "PRs Creadas por Mí": Muestra todas las PRs donde eres el autor
+  - "PRs Asignadas a Mí": Muestra PRs donde estás como assignee o reviewer
+  - Secciones plegables con iconos de chevron (ChevronDown/ChevronRight)
+  - Botón de refrescar con estilo consistente (variant outline)
+  - Título con icono User (blue-600) y descripción
+  - Funcionalidad completa de edición (urgent, quick, assignees, reviewers)
+- **Componente Collapsible**: Añadido componente de Shadcn/ui para secciones plegables
+
+### Changed
+- **Sistema de logging optimizado**: Logs de consola ahora solo se muestran en caso de errores
+  - Logs de error con detalles específicos (formato inválido, validación fallida, errores de red)
+  - Incluye información contextual completa para debugging (input recibido, esperado, status HTTP, stack traces)
+  - Eliminados logs innecesarios de operaciones exitosas
+- **Botón de refrescar**: Estilo unificado en todas las vistas (variant outline en lugar de verde)
+- **Padding consistente**: Todas las vistas ahora tienen `space-y-6 px-6` para espaciado uniforme
+  - Dashboard, MyPRsView, TeamView, ConfigView, RoleManagementView, GamificationView
+- **Títulos homogéneos**: Todas las vistas principales tienen h1 con icono y descripción
+  - ConfigView: Settings icon (amber-700)
+  - RoleManagementView: Shield icon (purple-600)
+  - GamificationView: Trophy icon (yellow-600)
+  - MyPRsView: User icon (blue-600)
+- **ConfigView**: Límites de tiempo en dos columnas (grid responsive)
+  - Móvil: 1 columna
+  - Desktop: 2 columnas lado a lado
+- **Rediseño de PRCard**: Nueva distribución de contenido más organizada y limpia
+  - **Header**: Icono + nombre del repo (izq) | Botones urgente/rápida solo iconos (der)
+  - **Centro**: Título de la PR + información (tiempo, autor, comentarios)
+  - **Footer**: Botón "Ver en GitHub" con outline
+  - **Sidebar derecho**: Solo asignaciones (Assignees y Reviewers)
+  - Labels eliminadas de la visualización (información disponible en GitHub)
+  - Borde vertical entre secciones ahora ocupa toda la altura
+  - Altura consistente en líneas de Assignees/Reviewers (32px mínimo)
+  - Texto "Sin asignar"/"Sin reviewers" más pequeño (xs)
+  - Selectores de usuarios más compactos (h-8, text-xs)
+  - Espaciado optimizado y más equilibrado
+- **Dashboard**: Añadido padding lateral (px-6) para mejor respiración del contenido
+
+### Added
+- **Selectores de Assignees y Reviewers**: Funcionalidad completa para gestionar asignaciones de PRs
+  - UserSelector component con búsqueda y multi-selección
+  - Optimistic updates para actualización instantánea de avatares
+  - Solo visible para usuarios con rol developer, admin o superadmin
+  - Excluye bots automáticamente
+  - Restricciones de GitHub respetadas (autor no puede ser reviewer)
+  - Check negro/gris oscuro para mejor visibilidad
+  - Actualización suave sin refresh de toda la lista
+  - Rollback automático en caso de error
+- **Sistema de roles de usuario**: Implementación completa de roles (superadmin, admin, developer, guest)
+  - Backend: Gestión de roles mediante variable de entorno `USER_ROLES`
+  - Frontend: Hooks `usePermissions`, `useHasPermission`, `useUserRole` y `useHasRole`
+  - Permisos granulares por rol:
+    - **Superadmin**: Acceso completo incluyendo gestión de roles
+    - **Admin**: Configuración de repositorios + permisos de developer
+    - **Developer**: Ver y editar PRs (urgente/rápida, assignees/reviewers)
+    - **Guest**: Solo visualización (sin edición)
+- **Interfaz de gestión de roles**: Panel de administración para superadmins
+  - Vista completa de roles y permisos
+  - Instrucciones para configurar roles mediante Netlify CLI
+  - Accesible desde el sidebar (botón solo visible para superadmins)
+- **Badge de rol en perfil de usuario**: Muestra el rol actual con colores distintivos
+  - Purple (superadmin), Blue (admin), Green (developer), Gray (guest)
+
+### Changed
+- **Acceso abierto habilitado**: Se eliminó la restricción de whitelist, ahora cualquier usuario con cuenta de GitHub puede hacer login
+- **Botones de urgente/rápida**: Ahora solo visibles para developer, admin y superadmin
+- **Optimistic updates completos**: Actualización instantánea de todos los elementos sin refresh de lista
+  - **Selectores de assignees/reviewers**: Avatares se actualizan inmediatamente
+  - **Botones urgente/rápida**: Cambio inmediato del estado visual (relleno/outline)
+  - **Etiquetas (labels)**: Aparecen/desaparecen instantáneamente al toggle urgente/rápida
+  - Sin saltos de scroll ni recargas innecesarias
+  - QueryKey consistency en todas las mutaciones
+  - Rollback automático en caso de error
+  - Console logging detallado para debugging
+- **Botón de configuración**: Ahora solo visible para admin y superadmin
+- Documentación actualizada en CLAUDE.md para reflejar el modo de acceso abierto y sistema de roles
+- JWT ahora incluye el campo `role` del usuario
+
+### Fixed
+- Etiquetas de urgente/rápida ahora se actualizan correctamente en el optimistic update
+- Array de labels se sincroniza con los estados isUrgent/isQuick
+
+### Removed
+- Alerts nativos (`alert()`) reemplazados por toasts de Shadcn/ui para mejor UX
+
+## [2.0.0] - 2025-01-26
+
+### Added
+- **Sidebar Navigation (Shadcn sidebar-07)**
+  - Collapsible sidebar with icon mode
+  - Logo de patata clickeable con animación wiggle y popup de GIF
+  - Sección "Pull Requests" con vistas "Todas las PRs" y "Mis PRs"
+  - Sección "Equipo" con vista "Vista por Usuario"
+  - NavUser component estilo sidebar-07 en el footer con dropdown mejorado
+  - Botón de "Leyenda de colores" en el footer del sidebar
+  - Responsive: drawer móvil con Sheet component
+  - Variant "inset" para contenido principal con bordes redondeados y sombra
+- **Breadcrumbs Navigation**
+  - Navegación de migas de pan dinámica en el header
+  - Muestra la sección actual (Pull Requests / Equipo) y la vista específica
+  - Reemplaza el título "HotPotato PR Dashboard" duplicado
+- **Theme Configuration**
+  - Theme de Shadcn configurado con yellow como color primario
+  - Colores consistentes para modo light y dark
+  - Sidebar con colores yellow para estados activos
+- **Placeholder Views**
+  - MyPRsView component para vista de "Mis PRs"
+  - TeamView component para vista por usuario del equipo
+- **GitHub OAuth Authentication System**
+  - Complete OAuth flow using existing GitHub App (User-to-Server tokens)
+  - JWT-based session management with 7-day token expiration
+  - LoginScreen component with GitHub sign-in button
+  - AuthCallback component to process OAuth callback
+  - UserMenu component with avatar, user info, and logout
+  - Zustand store for authentication state with localStorage persistence
+  - Protected routes implementation in App.tsx
+  - Session verification on app load
+  - Auth middleware for protecting serverless functions
+- **Authentication Serverless Functions**
+  - `/api/auth-login` - Initiates OAuth flow
+  - `/api/auth-callback` - Processes OAuth callback and generates JWT
+  - `/api/auth-me` - Verifies current session
+  - JWT utilities and middleware for token management
+- **User Whitelist System**
+  - Optional whitelist via `ALLOWED_GITHUB_USERS` environment variable
+  - Restricts access to specific GitHub users
+  - Case-insensitive username validation
+- **Development Environment**
+  - Branch deploys configuration for `development` branch
+  - Staging URL: `https://development--hot-potato-pr-dashboard.netlify.app`
+  - Separate callback URL configuration for dev environment
+- **UI Improvements**
+  - Config button moved into UserMenu dropdown
+  - User avatar with GitHub profile picture in header
+  - Dropdown menu with profile, settings, and logout options
+  - Better organized header layout
+- **Login Screen Improvements**
+  - Infinite wiggle animation on potato logo
+  - Removed disclaimer section explaining why login is needed
+  - Cleaner, simpler login experience
+- **Auth Callback Screen**
+  - Animated potato GIF (potato-02.gif) while processing authentication
+  - Visual feedback during OAuth process
 - Tooltips to all stat cards explaining what each filter does (instant display with delayDuration={0})
 - Comment filtering to exclude bot comments (Linear bot, and other bots)
 
 ### Changed
+- **App.tsx** - Refactored to support sidebar navigation
+  - Integrated SidebarProvider and navigation state management
+  - Added breadcrumbs navigation
+  - Conditional view rendering based on currentView state
+  - Removed help button from header (now in sidebar)
+- **Header Layout**
+  - Replaced title with breadcrumbs navigation
+  - Simplified to only show SidebarTrigger and breadcrumbs
+  - Removed leyenda button (now in sidebar)
+- **Sidebar Components**
+  - Renamed "PRs" section to "Pull Requests" for clarity
+  - UserMenu replaced by NavUser component with better UX
+  - Logo de patata centrado y redimensionado para modo colapsado
+- **UI Components**
+  - Added DropdownMenuGroup to dropdown-menu component
+  - Added breadcrumb component from Shadcn
+  - Added separator component from Shadcn
+  - Created use-mobile hook for responsive behavior
 - Renamed filter "Sin asignar" to "Asignación incompleta" for better clarity
 - Updated tooltip for "Sin assignee" to clarify it refers to the main reviewer who approves the PR
 - Comment counts now fetch individual comments and filter out bot authors (Linear, GitHub bots, etc.)
@@ -19,6 +191,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - PR authors are now correctly excluded from the reviewers list when they submit reviews on their own PRs
 - Comment counts no longer include bot comments (Linear bot specifically excluded)
+
+### Security
+- **Authentication required for all access** - No more open access to the dashboard
+- **JWT tokens with expiration** - 7-day token lifetime
+- **Optional user whitelist** - Restrict access to authorized team members only
+- **HTTPS enforced** - All authentication flows use secure connections
+- **Secrets in environment variables** - No secrets in codebase
+- Config, Urgent, and Quick buttons now visible (previously hidden, now protected by auth)
+
+### Removed
+- CSS classes for hiding Config, Urgent, and Quick buttons (no longer needed with auth)
 
 ## [1.1.1] - 2025-01-20
 

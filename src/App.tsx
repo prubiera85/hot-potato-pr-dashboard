@@ -1,12 +1,32 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useMutation } from '@tanstack/react-query';
-import { Settings, BookOpen, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
-import { ConfigPanel } from './components/ConfigPanel';
-import { Button } from './components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
+import { ConfigView } from './components/ConfigView';
+import { LoginScreen } from './components/LoginScreen';
+import { AuthCallback } from './components/AuthCallback';
+import { MyPRsView } from './components/MyPRsView';
+import { TeamAssignedView } from './components/TeamAssignedView';
+import { TeamCreatedView } from './components/TeamCreatedView';
+import { RoleManagementView } from './components/RoleManagementView';
+import { GamificationView } from './components/GamificationView';
+import { AppSidebar } from './components/app-sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from './components/ui/sidebar';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from './components/ui/breadcrumb';
+import { Badge } from './components/ui/badge';
+import { Toaster } from './components/ui/sonner';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs, dummyRepositories } from './utils/dummyData';
+import { useAuthStore } from './stores/authStore';
+import { verifySession } from './utils/auth';
+import { isDevelopmentBuild, getBranchName } from './utils/env';
 import packageJson from '../package.json';
 
 const queryClient = new QueryClient({
@@ -19,11 +39,13 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const { isAuthenticated, token, user, logout } = useAuthStore();
+  const [currentView, setCurrentView] = useState<'all' | 'my-prs' | 'team-assigned' | 'team-created' | 'config' | 'roles' | 'gamification'>('all');
   const [isTestMode, setIsTestMode] = useState(false);
   const [isGifModalOpen, setIsGifModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [processingPRs, setProcessingPRs] = useState<Set<string>>(new Set());
+  const [isVerifyingSession, setIsVerifyingSession] = useState(true);
 
   // Show version in console on load
   useEffect(() => {
@@ -33,6 +55,22 @@ function AppContent() {
       ''
     );
   }, []);
+
+  // Verify session on mount
+  useEffect(() => {
+    const verify = async () => {
+      if (token && !user) {
+        // We have a token but no user, verify it
+        const verifiedUser = await verifySession(token);
+        if (!verifiedUser) {
+          // Token is invalid, logout
+          logout();
+        }
+      }
+      setIsVerifyingSession(false);
+    };
+    verify();
+  }, [token, user, logout]);
 
   // Fetch PRs and config
   const {
@@ -87,7 +125,7 @@ function AppContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config'] });
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+      queryClient.invalidateQueries({ queryKey: ['prs', isTestMode] });
     },
   });
 
@@ -123,8 +161,65 @@ function AppContent() {
       }
       return response.json();
     },
+    onMutate: async (pr) => {
+      console.log('🔄 [Urgent Mutation] onMutate called', { prId: pr.id, currentIsUrgent: pr.isUrgent });
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+      console.log('📸 [Urgent Mutation] Previous data snapshot taken');
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) {
+          console.log('❌ [Urgent Mutation] No old data found');
+          return old;
+        }
+
+        const newIsUrgent = !pr.isUrgent;
+        console.log('🎯 [Urgent Mutation] Toggling urgent:', pr.isUrgent, '->', newIsUrgent);
+
+        const updated = {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              // Update labels array as well
+              let newLabels = [...p.labels];
+              const urgentLabelIndex = newLabels.findIndex(l => l.name.toLowerCase() === 'urgent');
+
+              if (newIsUrgent && urgentLabelIndex === -1) {
+                // Add urgent label
+                newLabels.push({
+                  id: Date.now(), // Temporary ID
+                  name: 'urgent',
+                  color: 'd73a4a'
+                });
+              } else if (!newIsUrgent && urgentLabelIndex !== -1) {
+                // Remove urgent label
+                newLabels = newLabels.filter(l => l.name.toLowerCase() !== 'urgent');
+              }
+
+              return {
+                ...p,
+                isUrgent: newIsUrgent,
+                labels: newLabels,
+              };
+            }
+            return p;
+          }),
+        };
+
+        console.log('✅ [Urgent Mutation] Data updated optimistically');
+        return updated;
+      });
+
+      return { previousPRs };
+    },
     onSuccess: (_, pr) => {
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Urgent Mutation] Success - keeping optimistic update');
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -132,7 +227,12 @@ function AppContent() {
         return next;
       });
     },
-    onError: (_, pr) => {
+    onError: (_, pr, context) => {
+      // Rollback on error
+      console.log('❌ [Urgent Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -171,8 +271,65 @@ function AppContent() {
       }
       return response.json();
     },
+    onMutate: async (pr) => {
+      console.log('🔄 [Quick Mutation] onMutate called', { prId: pr.id, currentIsQuick: pr.isQuick });
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+      console.log('📸 [Quick Mutation] Previous data snapshot taken');
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) {
+          console.log('❌ [Quick Mutation] No old data found');
+          return old;
+        }
+
+        const newIsQuick = !pr.isQuick;
+        console.log('🎯 [Quick Mutation] Toggling quick:', pr.isQuick, '->', newIsQuick);
+
+        const updated = {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              // Update labels array as well
+              let newLabels = [...p.labels];
+              const quickLabelIndex = newLabels.findIndex(l => l.name.toLowerCase() === 'quick');
+
+              if (newIsQuick && quickLabelIndex === -1) {
+                // Add quick label
+                newLabels.push({
+                  id: Date.now(), // Temporary ID
+                  name: 'quick',
+                  color: 'fbca04'
+                });
+              } else if (!newIsQuick && quickLabelIndex !== -1) {
+                // Remove quick label
+                newLabels = newLabels.filter(l => l.name.toLowerCase() !== 'quick');
+              }
+
+              return {
+                ...p,
+                isQuick: newIsQuick,
+                labels: newLabels,
+              };
+            }
+            return p;
+          }),
+        };
+
+        console.log('✅ [Quick Mutation] Data updated optimistically');
+        return updated;
+      });
+
+      return { previousPRs };
+    },
     onSuccess: (_, pr) => {
-      queryClient.invalidateQueries({ queryKey: ['prs'] });
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Quick Mutation] Success - keeping optimistic update');
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
@@ -180,11 +337,225 @@ function AppContent() {
         return next;
       });
     },
-    onError: (_, pr) => {
+    onError: (_, pr, context) => {
+      // Rollback on error
+      console.log('❌ [Quick Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
       const prKey = getPRKey(pr);
       setProcessingPRs(prev => {
         const next = new Set(prev);
         next.delete(`${prKey}-quick`);
+        return next;
+      });
+    },
+  });
+
+  // Toggle assignee mutation
+  const toggleAssigneeMutation = useMutation({
+    mutationFn: async ({ pr, userId, userLogin }: { pr: EnhancedPR; userId: number; userLogin: string; avatarUrl: string }) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => new Set(prev).add(`${prKey}-assignees`));
+
+      if (isTestMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return { success: true };
+      }
+
+      // Determine if we're adding or removing
+      const isCurrentlyAssigned = pr.assignees.some(a => a.id === userId);
+      const action = isCurrentlyAssigned ? 'remove' : 'add';
+
+      const response = await fetch('/api/assign-assignees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: pr.repo.owner,
+          repo: pr.repo.name,
+          pull_number: pr.number,
+          assignees: [userLogin],
+          action,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update assignees');
+      }
+      return response.json();
+    },
+    onMutate: async ({ pr, userId, userLogin, avatarUrl }) => {
+      console.log('🔄 [Assignee Mutation] onMutate called', { prId: pr.id, userId, userLogin });
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+      console.log('📸 [Assignee Mutation] Previous data snapshot taken');
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) {
+          console.log('❌ [Assignee Mutation] No old data found');
+          return old;
+        }
+
+        const isCurrentlyAssigned = pr.assignees.some(a => a.id === userId);
+        console.log('🎯 [Assignee Mutation] isCurrentlyAssigned:', isCurrentlyAssigned);
+
+        const updated = {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              let newAssignees;
+              if (isCurrentlyAssigned) {
+                // Remove assignee
+                newAssignees = p.assignees.filter(a => a.id !== userId);
+                console.log('➖ [Assignee Mutation] Removing assignee, new count:', newAssignees.length);
+              } else {
+                // Add assignee
+                newAssignees = [...p.assignees, { id: userId, login: userLogin, avatar_url: avatarUrl, html_url: `https://github.com/${userLogin}` }];
+                console.log('➕ [Assignee Mutation] Adding assignee, new count:', newAssignees.length);
+              }
+
+              return {
+                ...p,
+                assignees: newAssignees,
+                missingAssignee: newAssignees.length === 0,
+              };
+            }
+            return p;
+          }),
+        };
+
+        console.log('✅ [Assignee Mutation] Data updated optimistically');
+        return updated;
+      });
+
+      return { previousPRs };
+    },
+    onSuccess: (_, { pr }) => {
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Assignee Mutation] Success - keeping optimistic update');
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-assignees`);
+        return next;
+      });
+    },
+    onError: (_, { pr }, context) => {
+      // Rollback on error
+      console.log('❌ [Assignee Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-assignees`);
+        return next;
+      });
+    },
+  });
+
+  // Toggle reviewer mutation
+  const toggleReviewerMutation = useMutation({
+    mutationFn: async ({ pr, userId, userLogin }: { pr: EnhancedPR; userId: number; userLogin: string; avatarUrl: string }) => {
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => new Set(prev).add(`${prKey}-reviewers`));
+
+      if (isTestMode) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return { success: true };
+      }
+
+      // Determine if we're adding or removing
+      const isCurrentlyReviewer = pr.requested_reviewers.some(r => r.id === userId);
+      const action = isCurrentlyReviewer ? 'remove' : 'add';
+
+      const response = await fetch('/api/assign-reviewers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: pr.repo.owner,
+          repo: pr.repo.name,
+          pull_number: pr.number,
+          reviewers: [userLogin],
+          action,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update reviewers');
+      }
+      return response.json();
+    },
+    onMutate: async ({ pr, userId, userLogin, avatarUrl }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] });
+
+      // Snapshot the previous value
+      const previousPRs = queryClient.getQueryData(['prs', isTestMode]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['prs', isTestMode], (old: any) => {
+        if (!old) return old;
+
+        const isCurrentlyReviewer = pr.requested_reviewers.some(r => r.id === userId);
+
+        return {
+          ...old,
+          prs: old.prs.map((p: EnhancedPR) => {
+            if (p.id === pr.id) {
+              let newReviewers;
+              if (isCurrentlyReviewer) {
+                // Remove reviewer
+                newReviewers = p.requested_reviewers.filter(r => r.id !== userId);
+              } else {
+                // Add reviewer
+                newReviewers = [...p.requested_reviewers, { id: userId, login: userLogin, avatar_url: avatarUrl, html_url: `https://github.com/${userLogin}` }];
+              }
+
+              const reviewerCount = newReviewers.length + (p.requested_teams?.length || 0);
+
+              return {
+                ...p,
+                requested_reviewers: newReviewers,
+                reviewerCount,
+                missingReviewer: reviewerCount === 0,
+              };
+            }
+            return p;
+          }),
+        };
+      });
+
+      return { previousPRs };
+    },
+    onSuccess: (_, { pr }) => {
+      // No need to invalidate - optimistic update already handled it
+      console.log('✅ [Reviewer Mutation] Success - keeping optimistic update');
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-reviewers`);
+        return next;
+      });
+    },
+    onError: (_, { pr }, context) => {
+      // Rollback on error
+      console.log('❌ [Reviewer Mutation] Error - rolling back');
+      if (context?.previousPRs) {
+        queryClient.setQueryData(['prs', isTestMode], context.previousPRs);
+      }
+      const prKey = getPRKey(pr);
+      setProcessingPRs(prev => {
+        const next = new Set(prev);
+        next.delete(`${prKey}-reviewers`);
         return next;
       });
     },
@@ -199,68 +570,93 @@ function AppContent() {
 
   const hasError = !isTestMode && prsData?.error;
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="shadow" style={{ backgroundColor: '#ffeb9e' }}>
-        <div className="max-w-7xl mx-auto py-6 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src="/hot-potato-logo.png"
-              alt="Hot Potato Logo"
-              className="h-16 w-16 object-contain transition-transform duration-300 hover:animate-wiggle cursor-pointer"
-              onClick={() => setIsGifModalOpen(true)}
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                <span className="text-red-600">Hot</span>Potato PR Dashboard
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                PRs sin asignar son como patatas calientes - pásalas rápido!
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Help Button */}
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setIsHelpModalOpen(true)}
-                    variant="secondary"
-                    size="icon"
-                    className="bg-amber-700 hover:bg-amber-800 text-white"
-                  >
-                    <BookOpen className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Leyenda de colores</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            {/* Config Button */}
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setIsConfigOpen(true)}
-                    variant="secondary"
-                    size="icon"
-                    className="bg-amber-700 hover:bg-amber-800 text-white config-button-hidden"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Configuración</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-      </header>
+  // Check if we're handling OAuth callback
+  const urlParams = new URLSearchParams(window.location.search);
+  const isCallback = urlParams.has('code') || urlParams.has('error');
 
-      <main className="max-w-7xl mx-auto py-6 px-4">
+  // Show loading while verifying session
+  if (isVerifyingSession) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 mx-auto mb-4">
+            <svg viewBox="0 0 24 24">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+          <p className="text-gray-600">Verificando sesión...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle OAuth callback
+  if (isCallback) {
+    return <AuthCallback onSuccess={() => window.location.href = '/'} />;
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return (
+    <SidebarProvider>
+      <AppSidebar
+        currentView={currentView}
+        onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team-assigned' | 'team-created' | 'config' | 'roles' | 'gamification')}
+        onOpenGifModal={() => setIsGifModalOpen(true)}
+        onOpenHelp={() => setIsHelpModalOpen(true)}
+      />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="mr-2" />
+          <div className="flex items-center gap-2 flex-1">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink className="cursor-pointer">
+                    {(currentView === 'all' || currentView === 'my-prs') && 'Pull Requests'}
+                    {(currentView === 'team-assigned' || currentView === 'team-created') && 'Equipo'}
+                    {(currentView === 'config' || currentView === 'roles' || currentView === 'gamification') && 'Zona Admin'}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>
+                    {currentView === 'all' && 'Dashboard'}
+                    {currentView === 'my-prs' && 'Mis PRs'}
+                    {currentView === 'team-assigned' && 'Revisores'}
+                    {currentView === 'team-created' && 'PRs en Activo'}
+                    {currentView === 'config' && 'Configuración'}
+                    {currentView === 'roles' && 'Gestión de Roles'}
+                    {currentView === 'gamification' && 'Gamificación'}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            {isDevelopmentBuild() && (
+              <Badge variant="outline" className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-300 font-semibold">
+                🚧 DEV
+              </Badge>
+            )}
+          </div>
+        </header>
+
+        <main className="flex flex-1 flex-col gap-4 p-4">
         {isTestMode && (
           <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-center">
             <p className="text-blue-800 font-semibold">
@@ -296,37 +692,107 @@ function AppContent() {
             )}
           </div>
         ) : (
-          <Dashboard
-            prs={prs}
-            isLoading={isFetching && !isTestMode}
-            onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
-            onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
-            onRefresh={() => refetch()}
-            isProcessingUrgent={(pr) => processingPRs.has(`${getPRKey(pr)}-urgent`)}
-            isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
-            maxDaysOpen={config.maxDaysOpen}
-            configuredRepositories={config.repositories}
-          />
+          <>
+            {currentView === 'all' && (
+              <Dashboard
+                prs={prs}
+                isLoading={isFetching && !isTestMode}
+                onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
+                onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
+                onRefresh={() => refetch()}
+                isProcessingUrgent={(pr) => processingPRs.has(`${getPRKey(pr)}-urgent`)}
+                isProcessingQuick={(pr) => processingPRs.has(`${getPRKey(pr)}-quick`)}
+                maxDaysOpen={config.maxDaysOpen}
+                configuredRepositories={config.repositories}
+                onToggleAssignee={async (pr, userId, userLogin, avatarUrl) => {
+                  await toggleAssigneeMutation.mutateAsync({ pr, userId, userLogin, avatarUrl });
+                }}
+                onToggleReviewer={async (pr, userId, userLogin, avatarUrl) => {
+                  await toggleReviewerMutation.mutateAsync({ pr, userId, userLogin, avatarUrl });
+                }}
+                isProcessingAssignees={(pr) => processingPRs.has(`${getPRKey(pr)}-assignees`)}
+                isProcessingReviewers={(pr) => processingPRs.has(`${getPRKey(pr)}-reviewers`)}
+              />
+            )}
+            {currentView === 'my-prs' && (
+              <MyPRsView
+                prs={prs}
+                currentUser={user}
+                maxDaysOpen={config.maxDaysOpen}
+                onToggleUrgent={(pr) => toggleUrgentMutation.mutate(pr)}
+                onToggleQuick={(pr) => toggleQuickMutation.mutate(pr)}
+                onToggleAssignee={async (pr, userId) => {
+                  const userToAssign = prs
+                    .flatMap((p) => [...p.assignees, ...p.requested_reviewers, p.user])
+                    .find((u) => u.id === userId);
+                  if (userToAssign) {
+                    await toggleAssigneeMutation.mutateAsync({
+                      pr,
+                      userId,
+                      userLogin: userToAssign.login,
+                      avatarUrl: userToAssign.avatar_url,
+                    });
+                  }
+                }}
+                onToggleReviewer={async (pr, userId) => {
+                  const userToReview = prs
+                    .flatMap((p) => [...p.assignees, ...p.requested_reviewers, p.user])
+                    .find((u) => u.id === userId);
+                  if (userToReview) {
+                    await toggleReviewerMutation.mutateAsync({
+                      pr,
+                      userId,
+                      userLogin: userToReview.login,
+                      avatarUrl: userToReview.avatar_url,
+                    });
+                  }
+                }}
+                processingPRs={processingPRs}
+                onRefresh={() => refetch()}
+                isRefreshing={isFetching && !isTestMode}
+              />
+            )}
+            {currentView === 'team-assigned' && (
+              <TeamAssignedView
+                prs={prs}
+                maxDaysOpen={config.maxDaysOpen}
+                isLoading={isFetching}
+                onRefresh={() => refetch()}
+              />
+            )}
+            {currentView === 'team-created' && (
+              <TeamCreatedView
+                prs={prs}
+                maxDaysOpen={config.maxDaysOpen}
+                isLoading={isFetching}
+                onRefresh={() => refetch()}
+              />
+            )}
+            {currentView === 'config' && (
+              <ConfigView
+                config={config}
+                onSave={(newConfig) => saveConfigMutation.mutate(newConfig)}
+                isSaving={saveConfigMutation.isPending}
+                isTestMode={isTestMode}
+                onTestModeChange={setIsTestMode}
+              />
+            )}
+            {currentView === 'roles' && <RoleManagementView />}
+            {currentView === 'gamification' && <GamificationView />}
+          </>
         )}
+
+        <footer className="py-4 text-center text-sm text-gray-500 border-t">
+          <p>
+            Hot Potato PR Dashboard v{packageJson.version}
+            {isDevelopmentBuild() && (
+              <span className="text-yellow-600 font-semibold"> • 🚧 Development Build ({getBranchName()})</span>
+            )}
+            {!isTestMode && ' • Actualización automática cada 5 minutos'}
+          </p>
+        </footer>
       </main>
-
-      <footer className="max-w-7xl mx-auto py-6 px-4 text-center text-sm text-gray-500">
-        <p>
-          Hot Potato PR Dashboard v{packageJson.version}
-          {!isTestMode && ' • Actualización automática cada 5 minutos'}
-        </p>
-      </footer>
-
-      {/* Config Modal */}
-      <ConfigPanel
-        isOpen={isConfigOpen}
-        onClose={() => setIsConfigOpen(false)}
-        config={config}
-        onSave={(newConfig) => saveConfigMutation.mutate(newConfig)}
-        isSaving={saveConfigMutation.isPending}
-        isTestMode={isTestMode}
-        onTestModeChange={setIsTestMode}
-      />
+      </SidebarInset>
 
       {/* Help Modal */}
       {isHelpModalOpen && (
@@ -433,7 +899,7 @@ function AppContent() {
           </div>
         </div>
       )}
-    </div>
+    </SidebarProvider>
   );
 }
 
@@ -441,6 +907,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
+      <Toaster />
     </QueryClientProvider>
   );
 }

@@ -10,4 +10,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    // Inject Netlify environment variables at build time
+    '__BRANCH__': JSON.stringify(process.env.BRANCH || 'local'),
+    '__CONTEXT__': JSON.stringify(process.env.CONTEXT || 'local'),
+  },
 })

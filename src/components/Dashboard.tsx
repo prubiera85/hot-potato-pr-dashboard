@@ -18,9 +18,27 @@ interface DashboardProps {
   isProcessingQuick: (pr: EnhancedPR) => boolean;
   maxDaysOpen: number;
   configuredRepositories: Array<{ owner: string; name: string; enabled: boolean }>;
+  onToggleAssignee?: (pr: EnhancedPR, userId: number, userLogin: string, avatarUrl: string) => Promise<void>;
+  onToggleReviewer?: (pr: EnhancedPR, userId: number, userLogin: string, avatarUrl: string) => Promise<void>;
+  isProcessingAssignees?: (pr: EnhancedPR) => boolean;
+  isProcessingReviewers?: (pr: EnhancedPR) => boolean;
 }
 
-export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRefresh, isProcessingUrgent, isProcessingQuick, maxDaysOpen, configuredRepositories }: DashboardProps) {
+export function Dashboard({
+  prs,
+  isLoading,
+  onToggleUrgent,
+  onToggleQuick,
+  onRefresh,
+  isProcessingUrgent,
+  isProcessingQuick,
+  maxDaysOpen,
+  configuredRepositories,
+  onToggleAssignee,
+  onToggleReviewer,
+  isProcessingAssignees,
+  isProcessingReviewers
+}: DashboardProps) {
   const [sortBy, setSortBy] = useState<SortOption>('time-open-asc');
   const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer']));
   const [activeRepos, setActiveRepos] = useState<Set<string>>(new Set());
@@ -210,7 +228,7 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="space-y-6">
+      <div className="space-y-6 px-6">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <Tooltip>
@@ -519,12 +537,12 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
           <Button
             onClick={onRefresh}
             disabled={isLoading}
-            variant="default"
+            variant="outline"
             size="sm"
-            className="bg-green-600 hover:bg-green-700 ml-auto"
+            className="ml-auto"
           >
-            <RefreshCw className={isLoading ? 'animate-spin' : ''} />
-            <span>{isLoading ? 'Cargando...' : 'Refrescar'}</span>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refrescar
           </Button>
         </div>
       </div>
@@ -569,6 +587,20 @@ export function Dashboard({ prs, isLoading, onToggleUrgent, onToggleQuick, onRef
                 maxDaysOpen={maxDaysOpen}
                 collaborators={allCollaborators}
                 onPRUpdated={onRefresh}
+                onToggleAssignee={onToggleAssignee ? async (pr, userId) => {
+                  const user = allCollaborators.find(u => u.id === userId);
+                  if (user) {
+                    await onToggleAssignee(pr, userId, user.login, user.avatar_url);
+                  }
+                } : undefined}
+                onToggleReviewer={onToggleReviewer ? async (pr, userId) => {
+                  const user = allCollaborators.find(u => u.id === userId);
+                  if (user) {
+                    await onToggleReviewer(pr, userId, user.login, user.avatar_url);
+                  }
+                } : undefined}
+                isProcessingAssignees={isProcessingAssignees ? isProcessingAssignees(pr) : false}
+                isProcessingReviewers={isProcessingReviewers ? isProcessingReviewers(pr) : false}
               />
             ))}
           </div>
