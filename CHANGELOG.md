@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Toasts de error para validaciones fallidas
   - Toasts de advertencia para casos como repositorios duplicados
   - Estilos personalizados con colores distintivos (verde, rojo, amarillo)
-- **Indicador de entorno de desarrollo**: Badges visuales para identificar builds de development
-  - Badge "🚧 DEV" en el header junto a los breadcrumbs (amarillo)
-  - Texto completo en el footer con nombre de rama
+- **Indicador de entorno de desarrollo**: Visual distintivo para identificar builds de development
+  - Ribbon diagonal en esquina superior derecha con texto "🚧 DEVELOPMENT"
+  - Gradiente amarillo llamativo (yellow-400 to yellow-500)
+  - Texto "Development Build" en el footer
   - Solo visible en rama `development`, oculto automáticamente en `main`
   - Detección automática de entorno mediante variables de Netlify
 - **Vista "Mis PRs"**: Nueva sección para gestionar PRs personales

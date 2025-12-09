@@ -20,13 +20,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from './components/ui/breadcrumb';
-import { Badge } from './components/ui/badge';
 import { Toaster } from './components/ui/sonner';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs, dummyRepositories } from './utils/dummyData';
 import { useAuthStore } from './stores/authStore';
 import { verifySession } from './utils/auth';
-import { isDevelopmentBuild, getBranchName } from './utils/env';
+import { isDevelopmentBuild } from './utils/env';
 import packageJson from '../package.json';
 
 const queryClient = new QueryClient({
@@ -614,14 +613,26 @@ function AppContent() {
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar
-        currentView={currentView}
-        onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team-assigned' | 'team-created' | 'config' | 'roles' | 'gamification')}
-        onOpenGifModal={() => setIsGifModalOpen(true)}
-        onOpenHelp={() => setIsHelpModalOpen(true)}
-      />
-      <SidebarInset>
+    <div className="relative">
+      {/* Development Ribbon */}
+      {isDevelopmentBuild() && (
+        <div className="fixed top-0 right-0 z-50 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-48 h-48">
+            <div className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 text-center font-bold py-2 right-[-50px] top-[32px] w-[200px] shadow-lg">
+              <span className="text-xs tracking-wider">🚧 DEVELOPMENT</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SidebarProvider>
+        <AppSidebar
+          currentView={currentView}
+          onViewChange={(view) => setCurrentView(view as 'all' | 'my-prs' | 'team-assigned' | 'team-created' | 'config' | 'roles' | 'gamification')}
+          onOpenGifModal={() => setIsGifModalOpen(true)}
+          onOpenHelp={() => setIsHelpModalOpen(true)}
+        />
+        <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="mr-2" />
           <div className="flex items-center gap-2 flex-1">
@@ -648,11 +659,6 @@ function AppContent() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            {isDevelopmentBuild() && (
-              <Badge variant="outline" className="ml-2 bg-yellow-50 text-yellow-700 border-yellow-300 font-semibold">
-                🚧 DEV
-              </Badge>
-            )}
           </div>
         </header>
 
@@ -786,7 +792,7 @@ function AppContent() {
           <p>
             Hot Potato PR Dashboard v{packageJson.version}
             {isDevelopmentBuild() && (
-              <span className="text-yellow-600 font-semibold"> • 🚧 Development Build ({getBranchName()})</span>
+              <span className="text-yellow-600 font-semibold"> • 🚧 Development Build</span>
             )}
             {!isTestMode && ' • Actualización automática cada 5 minutos'}
           </p>
@@ -899,7 +905,8 @@ function AppContent() {
           </div>
         </div>
       )}
-    </SidebarProvider>
+      </SidebarProvider>
+    </div>
   );
 }
 
