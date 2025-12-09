@@ -613,14 +613,22 @@ function AppContent() {
   }
 
   return (
-    <div className="relative">
+    <>
       {/* Development Ribbon */}
       {isDevelopmentBuild() && (
-        <div className="fixed top-0 right-0 z-50 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-48 h-48">
-            <div className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 text-center font-bold py-2 right-[-50px] top-[32px] w-[200px] shadow-lg">
-              <span className="text-xs tracking-wider">🚧 DEVELOPMENT</span>
-            </div>
+        <div
+          className="fixed top-0 right-0 w-40 h-40 overflow-hidden pointer-events-none"
+          style={{ zIndex: 9999 }}
+        >
+          <div
+            className="absolute transform rotate-45 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 text-center font-bold py-2 shadow-lg"
+            style={{
+              top: '25px',
+              right: '-35px',
+              width: '170px'
+            }}
+          >
+            <span className="text-xs tracking-wider">🚧 DEVELOPMENT</span>
           </div>
         </div>
       )}
@@ -906,7 +914,7 @@ function AppContent() {
         </div>
       )}
       </SidebarProvider>
-    </div>
+    </>
   );
 }
 
