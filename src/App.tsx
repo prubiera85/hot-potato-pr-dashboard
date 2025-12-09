@@ -20,6 +20,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from './components/ui/breadcrumb';
+import { Toaster } from './components/ui/sonner';
 import type { DashboardConfig, EnhancedPR } from './types/github';
 import { dummyPRs, dummyRepositories } from './utils/dummyData';
 import { useAuthStore } from './stores/authStore';
@@ -896,6 +897,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
+      <Toaster />
     </QueryClientProvider>
   );
 }

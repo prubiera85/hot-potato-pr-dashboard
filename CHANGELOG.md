@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sistema de notificaciones con Sonner**: Implementación de toasts de Shadcn/ui en lugar de alerts nativos
+  - Toasts de éxito para operaciones completadas (agregar, eliminar, habilitar/deshabilitar repos)
+  - Toasts de error para validaciones fallidas
+  - Toasts de advertencia para casos como repositorios duplicados
+  - Estilos personalizados con colores distintivos (verde, rojo, amarillo)
 - **Vista "Mis PRs"**: Nueva sección para gestionar PRs personales
   - Dos secciones independientes con contador de PRs
   - "PRs Creadas por Mí": Muestra todas las PRs donde eres el autor
@@ -19,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Componente Collapsible**: Añadido componente de Shadcn/ui para secciones plegables
 
 ### Changed
+- **Sistema de logging optimizado**: Logs de consola ahora solo se muestran en caso de errores
+  - Logs de error con detalles específicos (formato inválido, validación fallida, errores de red)
+  - Incluye información contextual completa para debugging (input recibido, esperado, status HTTP, stack traces)
+  - Eliminados logs innecesarios de operaciones exitosas
 - **Botón de refrescar**: Estilo unificado en todas las vistas (variant outline en lugar de verde)
 - **Padding consistente**: Todas las vistas ahora tienen `space-y-6 px-6` para espaciado uniforme
   - Dashboard, MyPRsView, TeamView, ConfigView, RoleManagementView, GamificationView
@@ -86,6 +95,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Etiquetas de urgente/rápida ahora se actualizan correctamente en el optimistic update
 - Array de labels se sincroniza con los estados isUrgent/isQuick
+
+### Removed
+- Alerts nativos (`alert()`) reemplazados por toasts de Shadcn/ui para mejor UX
 
 ## [2.0.0] - 2025-01-26
 

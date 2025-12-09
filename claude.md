@@ -1,1160 +1,283 @@
 # HotPotato PR Dashboard - Claude Context
 
-## Descripción del Proyecto
-
-HotPotato PR Dashboard es una aplicación web que ayuda a gestionar Pull Requests de GitHub de manera visual e intuitiva. El concepto principal es que "las PRs sin asignar son como patatas calientes - ¡hay que pasarlas rápido!"
-
-**Versión Actual**: 2.0.0
+**Versión**: 2.0.0 | Dashboard de PRs de GitHub con gestión visual tipo "patata caliente"
 
 ## Stack Tecnológico
 
-- **Frontend**: React + TypeScript + Vite
-- **Styling**: Tailwind CSS
-- **UI Components**: Shadcn/ui (Radix UI)
-- **State Management**: React Query (TanStack Query) + Zustand (Auth)
-- **Authentication**: GitHub OAuth + JWT
-- **Icons**: Lucide React
-- **Deployment**: Netlify
-- **Backend**: Netlify Functions (Serverless)
-- **Auto-refresh**: Cada 5 minutos
+- React + TypeScript + Vite, Tailwind CSS, Shadcn/ui (Radix UI)
+- State: React Query (TanStack) + Zustand (Auth)
+- Auth: GitHub OAuth + JWT (7 días)
+- Backend: Netlify Functions (Serverless)
+- Auto-refresh: 5 minutos
 
-## Estructura del Proyecto
+## Estructura Clave
 
 ```
-pr-dashboard/
-├── src/
-│   ├── components/
-│   │   ├── ui/               # Componentes UI de Shadcn
-│   │   │   ├── sidebar.tsx   # Componente sidebar con primitivos
-│   │   │   ├── breadcrumb.tsx # Componente de breadcrumbs
-│   │   │   ├── separator.tsx  # Componente separador
-│   │   │   └── ...           # Otros componentes UI
-│   │   ├── app-sidebar.tsx   # Sidebar principal con navegación
-│   │   ├── nav-user.tsx      # Componente de usuario estilo sidebar-07
-│   │   ├── Dashboard.tsx     # Componente principal del dashboard
-│   │   ├── MyPRsView.tsx     # Vista de "Mis PRs" con secciones plegables
-│   │   ├── TeamAssignedView.tsx  # Vista "Revisores" - carga de trabajo por usuario
-│   │   ├── TeamCreatedView.tsx   # Vista "PRs en Activo" - PRs creadas por usuario
-│   │   ├── RoleManagementView.tsx # Vista de gestión de roles y permisos
-│   │   ├── PRCard.tsx        # Tarjeta individual de PR
-│   │   ├── ConfigPanel.tsx   # Panel de configuración
-│   │   ├── LoginScreen.tsx   # Pantalla de login con GitHub OAuth
-│   │   ├── AuthCallback.tsx  # Maneja callback de OAuth
-│   │   └── UserMenu.tsx      # Menú de usuario (legacy, replaced by nav-user)
-│   ├── hooks/
-│   │   └── use-mobile.tsx    # Hook para detectar dispositivos móviles
-│   ├── stores/
-│   │   └── authStore.ts      # Zustand store para autenticación
-│   ├── types/
-│   │   └── github.ts         # Tipos de TypeScript
-│   ├── utils/
-│   │   ├── prHelpers.ts      # Funciones auxiliares
-│   │   ├── dummyData.ts      # Datos de prueba
-│   │   └── auth.ts           # Funciones de autenticación
-│   └── App.tsx               # Componente raíz con sidebar y navegación
-├── netlify/functions/
-│   ├── auth-login.mts        # Inicia flujo OAuth
-│   ├── auth-callback.mts     # Procesa callback de OAuth
-│   ├── auth-me.mts           # Verifica sesión actual
-│   └── auth/
-│       ├── jwt.mts           # Utilidades JWT
-│       └── middleware.mts    # Middleware de autenticación
-└── public/                   # Assets estáticos
+src/
+├── components/
+│   ├── ui/               # Shadcn components
+│   ├── app-sidebar.tsx   # Sidebar (sidebar-07 pattern)
+│   ├── nav-user.tsx      # User dropdown
+│   ├── Dashboard.tsx     # Vista principal
+│   ├── MyPRsView.tsx     # PRs del usuario
+│   ├── TeamAssignedView.tsx  # Carga de revisores
+│   ├── TeamCreatedView.tsx   # PRs por creador
+│   ├── PRCard.tsx        # Card individual
+│   └── Auth*.tsx         # Login/Callback
+├── stores/authStore.ts   # Zustand + localStorage
+└── App.tsx               # Root + protected routes
+
+netlify/functions/
+├── auth-*.mts            # OAuth flow
+└── auth/{jwt,middleware}.mts
 ```
 
 ## Sistema de Colores
 
-### Colores de Tarjetas de PR
+**PRs (determinado SOLO por assignee):**
+1. **Marrón** (`border-amber-700`): Con assignee (OK)
+2. **Amarillo** (`border-yellow-400`): Sin assignee, <4h (warning)
+3. **Rojo** (`border-red-400`): Sin assignee, >5 días (crítico)
 
-El color de una tarjeta de PR está determinado **únicamente por el estado del assignee** (no por el reviewer):
+**Tiempo abierta:**
+- Verde: Dentro de límite
+- Rojo animado (`animate-ring`): Excedió límite
 
-1. **Marrón Patata** (`border-amber-700`, `text-amber-800/900`)
-   - PR con assignee asignado
-   - Estado normal, todo OK
+**Stats Cards (filtros clickeables):**
+- Activa: Color + 100% opacidad
+- Inactiva: Gris (`bg-gray-100`) + 60% opacidad
+- Total PRs (marrón), Urgentes (rojo), Rápidas (amarillo), Sin assignee/reviewer (naranjas)
+- Tooltips instantáneos (`delayDuration={0}`)
 
-2. **Amarillo** (`border-yellow-400`, `text-yellow-600/800`)
-   - PR sin assignee
-   - Dentro del límite de tiempo configurado (por defecto 4 horas)
-   - Estado de warning
+## Autenticación GitHub OAuth
 
-3. **Rojo** (`border-red-400`, `text-red-600/800`)
-   - PR sin assignee Y ha excedido el límite de días abierta (por defecto 5 días)
-   - Estado crítico
+**Flujo:**
+1. LoginScreen → `/api/auth-login` (GitHub OAuth URL)
+2. GitHub callback → `/api/auth-callback` (código → token + user)
+3. Whitelist check (opcional, actualmente abierta)
+4. JWT (7 días) → localStorage via Zustand
+5. Protected routes en App.tsx
 
-### Indicador de Tiempo
-
-El tiempo que lleva abierta una PR se muestra con un icono de reloj:
-
-- **Verde** (`text-green-600`): Dentro del límite de días permitidos
-- **Rojo con animación** (`text-red-600`, `animate-ring`): Ha excedido el límite de días
-
-### Colores de Stats Cards
-
-Las stats cards ahora son **botones clickeables** que funcionan como filtros rápidos:
-
-**Estados:**
-- **Activa** (filtro seleccionado): Fondo de color, borde de color, iconos y texto en color, opacidad 100%
-- **Inactiva** (filtro no seleccionado): Fondo gris (`bg-gray-100`), borde gris (`border-gray-300`), iconos y texto gris, opacidad 60%
-
-**Cards disponibles:**
-1. **Total PRs**: Marrón patata - Activa todos los filtros
-2. **Urgentes**: Rojo - Filtra solo PRs urgentes
-3. **Rápidas**: Amarillo - Filtra solo PRs rápidas
-4. **Sin assignee**: Naranja oscuro - Filtra PRs sin assignee (sin revisor principal para aprobar)
-5. **Sin reviewer**: Naranja medio - Filtra PRs sin reviewer
-6. **Asignación incompleta**: Naranja claro - Filtra PRs sin assignee O sin reviewer
-
-**Tooltips de Stats Cards:**
-Todas las stats cards tienen tooltips instantáneos (`delayDuration={0}`) que explican qué hace cada filtro:
-- **Total PRs**: "Mostrar todas las PRs (activa todos los filtros)"
-- **Urgentes**: "PRs marcadas con label 🔥 urgent"
-- **Rápidas**: "PRs marcadas con label ⚡ quick"
-- **Sin assignee**: "PRs sin revisor principal asignado para aprobarlas"
-- **Sin reviewer**: "PRs que no tienen persona asignada para revisarlas"
-- **Asignación incompleta**: "PRs sin assignee O sin reviewer (o ambos)"
-
-### Colores del Header
-
-- **Fondo**: Amarillo `#ffeb9e`
-- **Título**: "Hot" en rojo (`text-red-600`), resto en negro
-- **Botones**: Color patata (`bg-amber-700 hover:bg-amber-800`)
-
-## Sistema de Autenticación
-
-### Arquitectura de Autenticación
-
-La aplicación utiliza **GitHub OAuth (User-to-Server flow)** con la GitHub App existente, no requiere una OAuth App separada. El flujo completo es:
-
-1. **Usuario no autenticado** → Pantalla de login (`LoginScreen.tsx`)
-2. **Click en "Sign in with GitHub"** → Redirige a GitHub OAuth (`/api/auth-login`)
-3. **Usuario autoriza en GitHub** → GitHub redirige a callback (`/auth/callback`)
-4. **Callback procesa código** → Intercambia por access token, obtiene info de usuario
-5. **Whitelist check** → Valida si el usuario está en la lista permitida
-6. **Genera JWT** → Token con expiración de 7 días
-7. **Guarda en localStorage** → Zustand store persiste el token y usuario
-8. **Usuario autenticado** → Acceso al dashboard
-
-### Variables de Entorno
-
-Configuradas en Netlify (Production y Development):
-
+**Variables de Entorno (Netlify):**
 ```bash
-# GitHub App OAuth
 GITHUB_APP_CLIENT_ID=Iv23liMJt35aZuKXNpMX
 GITHUB_APP_CLIENT_SECRET=9a88fa126de4e1f4a282a1da52b24bd60d7b3480
-
-# JWT
 JWT_SECRET=super-secret-jwt-key-$(openssl rand -hex 16)
-
-# Whitelist (opcional - actualmente NO configurada = acceso abierto)
-# ALLOWED_GITHUB_USERS=prubiera,user2,user3
+# ALLOWED_GITHUB_USERS=user1,user2  # Opcional, actualmente NO configurada
 ```
 
-### Componentes de Autenticación
-
-#### LoginScreen.tsx
-
-Pantalla de login mostrada a usuarios no autenticados:
-- Diseño centrado con logo de patata
-- Botón "Sign in with GitHub" con icono de GitHub
-- Manejo de errores (muestra mensaje si hay error en query params)
-- Explicación del propósito de la autenticación
-- Usa Shadcn Button y Card components
-
-```typescript
-const handleLogin = async () => {
-  setError(null);
-  try {
-    await initiateGitHubLogin();
-  } catch (err) {
-    setError('Error al iniciar sesión');
-  }
-};
-```
-
-#### AuthCallback.tsx
-
-Procesa el callback de GitHub OAuth:
-- Extrae el código de autorización de la URL
-- Maneja errores de OAuth (access_denied, etc.)
-- Intercambia código por token mediante `/api/auth-callback`
-- Guarda token y usuario en authStore
-- Limpia la URL (reemplaza con `/`)
-- Redirige al dashboard
-
-```typescript
-const code = params.get('code');
-const error = params.get('error');
-
-if (error) {
-  navigate(`/?error=${error}`);
-  return;
-}
-
-const { token, user } = await handleOAuthCallback(code);
-login(token, user);
-window.history.replaceState({}, document.title, '/');
-onSuccess();
-```
-
-#### UserMenu.tsx
-
-Menú dropdown con avatar del usuario:
-- Avatar con imagen de GitHub (fallback a iniciales)
-- Nombre y username
-- Email (si disponible)
-- Opciones: Mi perfil, Configuración, Cerrar sesión
-- Logout limpia el store y recarga la página
-- Usa Shadcn DropdownMenu y Avatar components
-
-```typescript
-const handleLogout = () => {
-  logout();
-  window.location.reload();
-};
-```
-
-#### authStore.ts (Zustand)
-
-Store de autenticación con persistencia en localStorage:
-- Estado: `user`, `token`, `isAuthenticated`
-- Acciones: `login(token, user)`, `logout()`
-- Persiste automáticamente en localStorage con key `auth-storage`
-- Se restaura automáticamente al recargar la página
-
-```typescript
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      login: (token: string, user: User) => set({ token, user, isAuthenticated: true }),
-      logout: () => set({ token: null, user: null, isAuthenticated: false }),
-    }),
-    { name: 'auth-storage' }
-  )
-);
-```
-
-### Funciones Serverless de Autenticación
-
-#### auth-login.mts
-
-Endpoint: `GET /api/auth-login`
-
-Inicia el flujo OAuth:
-- Construye URL de autorización de GitHub
-- Incluye `client_id`, `redirect_uri`, y `scope` (read:user, user:email)
-- Retorna la URL al frontend para redirigir
-
-```typescript
-const githubAuthUrl = new URL('https://github.com/login/oauth/authorize');
-githubAuthUrl.searchParams.set('client_id', clientId);
-githubAuthUrl.searchParams.set('redirect_uri', callbackUrl);
-githubAuthUrl.searchParams.set('scope', 'read:user user:email');
-return new Response(JSON.stringify({ authUrl: githubAuthUrl.toString() }));
-```
-
-#### auth-callback.mts
-
-Endpoint: `GET /api/auth-callback?code=xxx`
-
-Procesa el callback de OAuth:
-1. Intercambia código por access token en GitHub
-2. Usa el token para obtener información del usuario
-3. Verifica whitelist (si está configurada)
-4. Genera JWT con información del usuario
-5. Retorna token y usuario al frontend
-
-```typescript
-// Intercambio de código
-const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-  method: 'POST',
-  body: JSON.stringify({ client_id, client_secret, code }),
-});
-
-// Obtener usuario
-const userResponse = await fetch('https://api.github.com/user', {
-  headers: { 'Authorization': `Bearer ${accessToken}` }
-});
-
-// Verificar whitelist
-if (!isUserAllowed(githubUser.login)) {
-  return new Response(JSON.stringify({ error: 'User not allowed' }), { status: 403 });
-}
-
-// Generar JWT
-const token = generateToken(user);
-return new Response(JSON.stringify({ token, user }));
-```
-
-#### auth-me.mts
-
-Endpoint: `GET /api/auth-me`
-
-Verifica la sesión actual:
-- Requiere header `Authorization: Bearer <token>`
-- Usa middleware `requireAuth` para validar JWT
-- Retorna información del usuario si el token es válido
-
-```typescript
-export default async (request: Request) => {
-  const user = await requireAuth(request);
-  return new Response(JSON.stringify({ user }));
-};
-```
-
-#### auth/jwt.mts
-
-Utilidades para manejo de JWT:
-
-**Funciones:**
-- `generateToken(user)`: Genera JWT con expiración de 7 días
-- `verifyToken(token)`: Verifica y decodifica JWT
-- `isUserAllowed(login)`: Verifica si usuario está en whitelist
-
-```typescript
-export function generateToken(user: UserPayload): string {
-  const secret = Netlify.env.get('JWT_SECRET');
-  return jwt.sign(user, secret, { expiresIn: '7d' });
-}
-
-export function verifyToken(token: string): JWTPayload {
-  const secret = Netlify.env.get('JWT_SECRET');
-  return jwt.verify(token, secret) as JWTPayload;
-}
-
-export function isUserAllowed(login: string): boolean {
-  const allowedUsers = Netlify.env.get('ALLOWED_GITHUB_USERS');
-  if (!allowedUsers) return true; // Si no hay whitelist, permite todos
-
-  const allowedList = allowedUsers.split(',').map(u => u.trim().toLowerCase());
-  return allowedList.includes(login.toLowerCase());
-}
-```
-
-#### auth/middleware.mts
-
-Middleware de autenticación para proteger endpoints:
-
-```typescript
-export async function requireAuth(request: Request): Promise<JWTPayload> {
-  const authHeader = request.headers.get('Authorization');
-  const token = extractTokenFromHeader(authHeader || '');
-
-  if (!token) {
-    throw new Error('No authentication token provided');
-  }
-
-  return verifyToken(token);
-}
-
-function extractTokenFromHeader(authHeader: string): string | null {
-  if (!authHeader.startsWith('Bearer ')) return null;
-  return authHeader.substring(7);
-}
-```
-
-### Protected Routes en App.tsx
-
-La aplicación implementa protected routes a nivel del componente raíz:
-
-```typescript
-const { isAuthenticated, token, user, logout } = useAuthStore();
-const [isVerifyingSession, setIsVerifyingSession] = useState(true);
-
-// Verificar sesión al cargar
-useEffect(() => {
-  const verify = async () => {
-    if (token && !user) {
-      const verifiedUser = await verifySession(token);
-      if (!verifiedUser) logout();
-    }
-    setIsVerifyingSession(false);
-  };
-  verify();
-}, [token, user, logout]);
-
-// Detectar callback de OAuth
-const urlParams = new URLSearchParams(window.location.search);
-const isCallback = urlParams.has('code') || urlParams.has('error');
-
-// Mostrar loading durante verificación
-if (isVerifyingSession) {
-  return <div>Verificando sesión...</div>;
-}
-
-// Manejar callback
-if (isCallback) {
-  return <AuthCallback onSuccess={() => window.location.href = '/'} />;
-}
-
-// Redirigir a login si no está autenticado
-if (!isAuthenticated) {
-  return <LoginScreen />;
-}
-
-// Mostrar dashboard si está autenticado
-return <Dashboard />;
-```
-
-### Whitelist de Usuarios
-
-El sistema soporta una whitelist opcional de usuarios permitidos:
-
-**Configuración Actual:**
-- ✅ **Acceso abierto**: La variable `ALLOWED_GITHUB_USERS` NO está configurada
-- ✅ Cualquier usuario con cuenta de GitHub puede hacer login
-
-**Configuración:**
-- Variable de entorno: `ALLOWED_GITHUB_USERS`
-- Formato: Lista separada por comas de usernames de GitHub
-- Ejemplo: `ALLOWED_GITHUB_USERS=prubiera,user2,user3`
-
-**Comportamiento:**
-- Si la variable NO está configurada → Permite todos los usuarios con cuenta de GitHub (modo actual)
-- Si la variable ESTÁ configurada → Solo permite usuarios en la lista
-- Validación case-insensitive (normaliza a lowercase)
-- Error 403 si usuario no está permitido
-
-**Restringir acceso (si se requiere en el futuro):**
-```bash
-netlify env:set ALLOWED_GITHUB_USERS "prubiera,user2,user3"
-```
-
-**Volver a acceso abierto:**
-```bash
-netlify env:unset ALLOWED_GITHUB_USERS
-```
-
-### Callbacks URL Configurados
-
-La GitHub App tiene configuradas las siguientes callback URLs:
-
-**Production:**
-- `https://hot-potato-pr-dashboard.netlify.app/auth/callback`
-
-**Development (Branch Deploy):**
-- `https://development--hot-potato-pr-dashboard.netlify.app/auth/callback`
-
-**Local Development:**
-- `http://localhost:5173/auth/callback`
-
-### Seguridad
-
-**Medidas de seguridad implementadas:**
-
-1. **JWT con expiración**: Tokens expiran en 7 días
-2. **Whitelist opcional**: Control de acceso a nivel de usuario
-3. **HTTPS obligatorio**: Netlify fuerza HTTPS en todos los ambientes
-4. **Secrets en variables de entorno**: Nunca en código
-5. **Token en localStorage**: Accesible solo al mismo dominio
-6. **Verificación de sesión**: Al cargar la app, verifica token con backend
-7. **Logout limpia todo**: Elimina token y recarga página
-
-**Consideraciones:**
-- El JWT_SECRET debe ser único por ambiente
-- Los client secrets deben mantenerse privados
-- Actualmente en modo acceso abierto (sin whitelist)
-
-### Environments y Deploys
-
-**Main (Production):**
-- URL: `https://hot-potato-pr-dashboard.netlify.app`
-- Deploy automático en push a `main`
-- Variables de entorno de producción
-
-**Development (Staging):**
-- URL: `https://development--hot-potato-pr-dashboard.netlify.app`
-- Deploy automático en push a `development`
-- Variables de entorno de desarrollo
-- Para testing con el equipo antes de producción
-
-**Configuración en netlify.toml:**
-```toml
-[context.development]
-  command = "npm run build"
-
-[context.development.environment]
-  NODE_ENV = "development"
-```
-
-## Sistema de Navegación
-
-### Sidebar (Shadcn sidebar-07)
-
-La aplicación usa un sidebar colapsible basado en el patrón sidebar-07 de Shadcn/ui:
-
-**Características:**
-- **Collapsible**: Se puede colapsar a modo icono con Ctrl/Cmd + B
-- **Variant "inset"**: Contenido principal con bordes redondeados y sombra
-- **Responsive**: En móvil se muestra como drawer (Sheet component)
-- **Estructura de navegación**:
-  - **Header**: Logo de patata clickeable (animación wiggle + popup GIF)
-  - **Content**: Dos secciones de navegación
-    - **Pull Requests**: "Dashboard", "Mis PRs"
-    - **Equipo**: "Revisores", "PRs en Activo"
-  - **Footer**: Botón "Leyenda de colores" + NavUser component
-
-**Componentes relacionados:**
-- `app-sidebar.tsx`: Sidebar principal con toda la navegación
-- `nav-user.tsx`: Componente de usuario estilo sidebar-07 con dropdown
-- `ui/sidebar.tsx`: Primitivos del sidebar de Shadcn
-- `hooks/use-mobile.tsx`: Hook para detectar dispositivos móviles
-
-### Breadcrumbs
-
-El header muestra breadcrumbs dinámicos en lugar del título:
-- **Pull Requests** > **Dashboard** / **Mis PRs**
-- **Equipo** > **Revisores** / **PRs en Activo**
-
-Los breadcrumbs se actualizan automáticamente según la vista actual.
-
-### Vistas Disponibles
-
-1. **Dashboard** (`currentView='all'`): Vista principal con todas las PRs y filtros
-2. **Mis PRs** (`currentView='my-prs'`): Vista personal con PRs creadas y asignadas al usuario
-3. **Revisores** (`currentView='team-assigned'`): Carga de trabajo de revisores (assignees y reviewers)
-4. **PRs en Activo** (`currentView='team-created'`): PRs activas creadas por cada usuario
-5. **Gestión de Roles** (`currentView='roles'`): Administración de usuarios y permisos (solo admins)
-
-### NavUser Component
-
-Reemplaza al antiguo UserMenu con mejor UX estilo sidebar-07:
-- Avatar del usuario con foto de GitHub
-- Nombre, username y email
-- Dropdown con opciones:
-  - Mi perfil
-  - Configuración (abre ConfigPanel)
-  - Cerrar sesión
-- Se adapta al estado del sidebar (expandido/colapsado)
-- Responsive: dropdown se posiciona según el dispositivo
+**Componentes:**
+- `LoginScreen`: Botón "Sign in with GitHub"
+- `AuthCallback`: Procesa callback, guarda token
+- `authStore`: Zustand con `{user, token, isAuthenticated, login(), logout()}`
+- `nav-user.tsx`: Dropdown con avatar, perfil, config, logout
+
+**Funciones Serverless:**
+- `auth-login.mts`: Genera GitHub OAuth URL
+- `auth-callback.mts`: Intercambia código → token, valida whitelist, genera JWT
+- `auth-me.mts`: Verifica sesión (`requireAuth` middleware)
+- `auth/jwt.mts`: `generateToken()`, `verifyToken()`, `isUserAllowed()`
+
+**Callbacks:**
+- Prod: `https://hot-potato-pr-dashboard.netlify.app/auth/callback`
+- Dev: `https://development--hot-potato-pr-dashboard.netlify.app/auth/callback`
+- Local: `http://localhost:5173/auth/callback`
+
+## Navegación
+
+**Sidebar (Shadcn sidebar-07):**
+- Colapsible (Ctrl/Cmd + B), variant "inset"
+- Header: Logo patata (wiggle + GIF popup)
+- Secciones: Pull Requests (Dashboard, Mis PRs) | Equipo (Revisores, PRs en Activo)
+- Footer: Leyenda + NavUser
+
+**Vistas:**
+1. `all`: Dashboard principal con stats cards + filtros
+2. `my-prs`: PRs creadas + asignadas al usuario (secciones plegables)
+3. `team-assigned`: Carga de trabajo por revisor (tabla colapsable)
+4. `team-created`: PRs activas por creador
+5. `roles`: Gestión de usuarios/permisos (solo admins)
+
+**Breadcrumbs dinámicos:**
+- Pull Requests > Dashboard / Mis PRs
+- Equipo > Revisores / PRs en Activo
 
 ## Componentes Principales
 
 ### Dashboard.tsx
-
-Componente principal que contiene:
-- Stats cards clickeables (métricas de PRs que funcionan como filtros)
-- Tooltips instantáneos en stats cards explicando cada filtro
-- Dropdown de filtros (Urgente, Rápida, Asignación incompleta, Sin assignee, Sin reviewer)
-- Filtro de repositorios (muestra TODOS los repos configurados, incluso sin PRs)
-- Ordenamiento de PRs
-- Lista de PRs
-- Botón de refrescar (variant outline)
-- Estado vacío con GIF animado
-- Padding consistente: `space-y-6 px-6`
-
-**Características importantes:**
-- Stats cards son botones con tooltips informativos instantáneos (`delayDuration={0}`)
-- Stats cards con comportamiento exclusivo (click = solo ese filtro)
-- Checkboxes con `<label>` para mejor UX
-- Filtros activos controlan qué PRs se muestran (lógica OR/inclusiva)
-- Auto-refresco cada 5 minutos (cuando no está en modo test)
-- Estado vacío muestra GIF de matojo del desierto cuando no hay PRs
+- Stats cards clickeables como filtros (comportamiento exclusivo)
+- Dropdown de filtros + repos (muestra TODOS los repos config)
+- Auto-refresh cada 5 min
+- Estado vacío: GIF matojo desierto
+- Padding: `space-y-6 px-6`
 
 ### MyPRsView.tsx
+**Secciones Collapsible:**
+1. PRs Creadas por Mí: `pr.user.login === currentUser.login`
+2. PRs Asignadas a Mí: `assignees` o `requested_reviewers` incluye currentUser
 
-Vista personal de PRs del usuario autenticado:
-
-**Estructura:**
-- Título h1 con icono User (blue-600) y descripción
-- Botón de refrescar alineado a la derecha
-- Dos secciones independientes con contadores
-
-**Secciones plegables:**
-1. **PRs Creadas por Mí**
-   - Muestra todas las PRs donde el usuario es el autor
-   - Icono de chevron (ChevronDown/ChevronRight) indica estado
-   - Contador visible: `(X)`
-   - Estado por defecto: abierta
-
-2. **PRs Asignadas a Mí**
-   - Muestra PRs donde el usuario está como assignee o reviewer
-   - Puede incluir PRs que el usuario creó si también se autoasignó
-   - Mismo formato que la primera sección
-   - Estado por defecto: abierta
-
-**Características:**
-- Componente Collapsible de Shadcn/ui para plegar/desplegar
-- Click en título para colapsar/expandir
-- Estado independiente para cada sección
-- Funcionalidad completa: urgent, quick, assignees, reviewers
-- Carga automática de colaboradores de todos los repos
-- Padding consistente: `space-y-6 px-6`
-- Optimistic updates en todas las mutaciones
-- Tooltips instantáneos (`delayDuration={0}`)
-
-**Lógica de filtrado:**
-```typescript
-// PRs Creadas por Mí
-myCreatedPRs = prs.filter(pr => pr.user.login === currentUser.login)
-
-// PRs Asignadas a Mí
-myAssignedPRs = prs.filter(pr =>
-  pr.assignees.some(a => a.login === currentUser.login) ||
-  pr.requested_reviewers.some(r => r.login === currentUser.login)
-)
-```
-
-**Nota:** Una PR puede aparecer en ambas secciones si la creaste y te autoasignaste.
+Ambas con contador, estado independiente, optimistic updates
 
 ### TeamAssignedView.tsx
-
-Vista de carga de trabajo de revisores (assignees y reviewers):
-
-**Características:**
-- Icono Eye (verde) para representar "revisores"
-- Botón de refrescar en la esquina superior derecha
-- Spinner de carga mientras obtiene datos de GitHub y usuarios registrados
-- Muestra TODOS los usuarios registrados, incluso con 0 PRs asignadas
-
-**Funcionalidad:**
-- Query a `/api/get-user-roles` para obtener usuarios registrados
-- Agrupa PRs por usuario (como assignee o reviewer)
-- Combina datos de GitHub con usuarios registrados del sistema
-- Usuarios sin PRs en GitHub se muestran con 0 asignaciones
-
-**Estructura de tabla:**
-- Header: Usuario | PRs Asignadas
-- Filas colapsables (Collapsible component)
-- Click en fila para expandir/contraer detalles
-- Tabla interna con PRs individuales cuando hay asignaciones
-
-**Detalles de PR expandida:**
-- Repositorio, título con link, rol (Assignee/Reviewer)
-- Autor, comentarios, tiempo abierta
-- Iconos urgente/rápida, link a GitHub
-- Borde coloreado según estado (rojo/amarillo/marrón)
-
-**ID determinístico:**
-- Para usuarios sin PRs en GitHub, usa ID basado en username
-- Suma de charCodes del username convertido a negativo
-- Previene que Collapsible pierda estado entre re-renders
-- **CRÍTICO**: No usar `Math.random()` para IDs de usuarios
-
-**Ordenamiento:**
-1. Por cantidad de PRs asignadas (descendente)
-2. Por username alfabético (si empate en cantidad)
+- Query a `/api/get-user-roles` para usuarios registrados
+- Muestra TODOS los usuarios, incluso con 0 PRs
+- Tabla colapsable con PRs individuales
+- **ID determinístico**: Suma charCodes del username (negativo) para usuarios sin PRs
+- Ordenamiento: Por cantidad PRs (desc) → username (asc)
 
 ### TeamCreatedView.tsx
-
-Vista de PRs activas creadas por cada usuario:
-
-**Características:**
-- Icono GitPullRequest (naranja) para representar "PRs en activo"
-- Botón de refrescar en la esquina superior derecha
-- Spinner de carga mientras obtiene datos
-- Solo muestra usuarios que tienen PRs activas creadas
-
-**Funcionalidad:**
-- Agrupa PRs por creador (pr.user)
-- Filtra usuarios sin PRs creadas
-- Ordena por cantidad de PRs creadas (descendente)
-
-**Estructura de tabla:**
-- Header: Usuario | PRs Creadas
-- Filas colapsables (Collapsible component)
-- Click en fila para expandir/contraer detalles
-- Tabla interna con PRs individuales
-
-**Detalles de PR expandida:**
-- Repositorio, título con link
-- Assignees badges (azul) o "Sin assignee" (rojo)
-- Reviewers badges (morado) o "Sin reviewers" (naranja)
-- Comentarios, tiempo abierta
-- Iconos urgente/rápida, link a GitHub
-- Borde coloreado según estado
-
-**Diferencia con TeamAssignedView:**
-- No muestra usuarios sin PRs creadas
-- No requiere query de usuarios registrados
-- Enfoque en PRs activas del autor, no en revisiones
+- Solo usuarios con PRs creadas
+- Agrupa por `pr.user`
+- Tabla colapsable con assignees/reviewers badges
 
 ### PRCard.tsx
+**Layout:**
+- Izquierda: Header (repo + urgent/quick) | Centro (título + info) | Footer (Ver en GitHub)
+- Derecha: Sidebar asignaciones (256px fijo)
+- Solo visible para developer/admin/superadmin
 
-Tarjeta individual de PR con diseño organizado en tres zonas:
+**Selectores (UserSelector):**
+- Assignees: Incluye autor PR
+- Reviewers: Excluye autor + assignees actuales
+- Optimistic updates, sin refresh total
+- Visible si `canManageAssignees`
 
-**Layout principal:**
-- **Lado izquierdo**: Contenido de la PR (header + centro + footer)
-- **Lado derecho**: Sidebar de asignaciones (ancho fijo 256px)
-- Borde vertical entre secciones ocupa toda la altura (flex stretch)
-
-**Lado izquierdo - Header:**
-- Icono del repo + nombre del repo (izquierda)
-- Botones urgente/rápida solo con iconos (derecha)
-- Borde inferior separador
-- Solo visible para developer, admin, superadmin
-
-**Lado izquierdo - Centro:**
-- Título de la PR con link a GitHub
-- Información: tiempo abierta, autor, comentarios
-- Comentarios con tooltip descriptivo (desglose de comentarios generales vs código, filtrados sin bots)
-
-**Lado izquierdo - Footer:**
-- Botón "Ver en GitHub" con variant outline
-- Sin borde superior (espaciado con pt-2)
-
-**Lado derecho - Asignaciones:**
-- **Assignees**: Título + avatares o "Sin asignar" (texto xs)
-- **Reviewers**: Título + avatares o "Sin reviewers" (texto xs)
-- Altura consistente de 32px mínimo en líneas de título
-- Selectores compactos (h-8, text-xs)
-- Solo visible para developer, admin, superadmin
-
-**Selectores de Assignees/Reviewers:**
-- Usa el componente `UserSelector` con búsqueda y multi-selección
-- Muestra check negro/gris oscuro (✓) para usuarios seleccionados
-- **Assignees**: Incluye al autor de la PR (puede asignarse a sí mismo)
-- **Reviewers**: Excluye al autor de la PR (restricción de GitHub) y excluye assignees actuales
-- Actualización instantánea mediante optimistic updates
-- Sin refresh de toda la lista (solo actualiza la PR específica)
-- Rollback automático en caso de error
-- Solo visible si el usuario tiene permiso `canManageAssignees`
-
-**Lógica de colores:**
-```typescript
-let borderColor = 'border-amber-700'; // Default: con assignee
-if (!hasAssignee) {
-  if (isOverMaxDays) {
-    borderColor = 'border-red-400'; // Crítico
-  } else {
-    borderColor = 'border-yellow-400'; // Warning
-  }
-}
-```
-
-**Notas importantes:**
-- Labels de GitHub NO se muestran en la card (información disponible en GitHub)
-- Estado visual determinado solo por el assignee (reviewer no afecta colores)
-- Espaciado optimizado y equilibrado entre secciones
+**Info:**
+- Comentarios con tooltip (generales + código, sin bots/Linear)
 
 ### App.tsx
+**Optimistic Updates Patrón:**
+1. **onMutate**: `cancelQueries` → snapshot → `setQueryData` optimista → return snapshot
+2. **onSuccess**: NO `invalidateQueries` (mantiene update optimista)
+3. **onError**: Restore snapshot
 
-Componente raíz que maneja:
-- Estado global de la aplicación
-- Modales (Config, Help, GIF)
-- Query de PRs y configuración
-- **Mutaciones con optimistic updates completos**:
-  - Toggle urgent/quick (con actualización de labels)
-  - Assignees (agregar/remover)
-  - Reviewers (agregar/remover)
-- Header con botones de ayuda y configuración
-- Versionado dinámico desde package.json
-- Console log con estilo y emoji de patata
+**Mutaciones:**
+- `toggleUrgent/Quick`: Actualiza boolean + labels array
+- `toggleAssignee/Reviewer`: Actualiza arrays + `missing*` flags
+- **QueryKey**: `['prs', isTestMode]` SIEMPRE (crítico)
 
-**Optimistic Updates - Patrón Completo:**
-
-Todas las mutaciones siguen el mismo patrón para lograr UX instantánea sin recargas de lista:
-
-1. **onMutate** (antes del API call):
-   - Cancela queries en curso: `await queryClient.cancelQueries({ queryKey: ['prs', isTestMode] })`
-   - Toma snapshot del estado actual: `const previousPRs = queryClient.getQueryData(['prs', isTestMode])`
-   - Actualiza optimísticamente los datos: `queryClient.setQueryData(['prs', isTestMode], (old) => {...})`
-   - Retorna el snapshot: `return { previousPRs }`
-
-2. **onSuccess** (después del API call exitoso):
-   - **NO llama `invalidateQueries`** (esto causaría refresh de toda la lista)
-   - Solo limpia el estado de procesamiento
-   - Mantiene el cambio optimista que ya está en la UI
-
-3. **onError** (si el API call falla):
-   - Restaura el snapshot: `queryClient.setQueryData(['prs', isTestMode], context.previousPRs)`
-   - Limpia el estado de procesamiento
-   - El usuario ve un rollback suave sin perder su posición
-
-**Mutaciones Implementadas:**
-
-**toggleUrgentMutation:**
-- Actualiza `isUrgent` (boolean)
-- Actualiza array de `labels`:
-  - Si activando: agrega `{id: Date.now(), name: 'urgent', color: 'd73a4a'}`
-  - Si desactivando: remueve el label 'urgent'
-- Endpoint: `/api/toggle-urgent`
-
-**toggleQuickMutation:**
-- Actualiza `isQuick` (boolean)
-- Actualiza array de `labels`:
-  - Si activando: agrega `{id: Date.now(), name: 'quick', color: 'fbca04'}`
-  - Si desactivando: remueve el label 'quick'
-- Endpoint: `/api/toggle-quick`
-
-**toggleAssigneeMutation:**
-- Agrega/remueve usuario del array `assignees`
-- Actualiza `missingAssignee` (boolean)
-- Incluye `avatar_url` para mostrar inmediatamente
-- Endpoint: `/api/assign-assignees`
-
-**toggleReviewerMutation:**
-- Agrega/remueve usuario del array `requested_reviewers`
-- Actualiza `missingReviewer` (boolean)
-- Incluye `avatar_url` para mostrar inmediatamente
-- Endpoint: `/api/assign-reviewers`
-
-**QueryKey Consistency:**
-- CRÍTICO: Todas las operaciones deben usar `['prs', isTestMode]`
-- Inconsistencias en queryKey causan que optimistic updates no funcionen
-- Se usa en: useQuery, cancelQueries, getQueryData, setQueryData
-
-**Console Logging:**
-- Emojis para identificar rápidamente el tipo de evento:
-  - 🔄 onMutate iniciado
-  - 📸 Snapshot tomado
-  - 🎯 Operación detectada (add/remove)
-  - ➕ Agregando elemento
-  - ➖ Removiendo elemento
-  - ✅ Éxito (mantiene optimistic update)
-  - ❌ Error (rollback)
+**Console logs (solo errores):**
+- ❌ Errores críticos con detalles completos (input, expected, received, status HTTP, stack traces)
+- ⚠️ Advertencias (duplicados, validaciones)
+- Logs incluyen contexto completo para debugging
+- NO se loguean operaciones exitosas (usar toasts para feedback visual)
 
 ## Características Clave
 
 ### Sistema de Filtros
-
-**5 filtros disponibles:**
-1. Urgente (🔥)
-2. Rápida (⚡)
+**5 filtros (lógica OR inclusiva):**
+1. Urgente (🔥 urgent label)
+2. Rápida (⚡ quick label)
 3. Asignación incompleta (assignee O reviewer)
-4. Sin assignee (sin revisor principal para aprobar)
+4. Sin assignee
 5. Sin reviewer
 
-**Comportamiento:**
-- Los filtros son inclusivos (OR): Muestra PRs que cumplan con AL MENOS UNO de los filtros activos
-- Si desactivas todos, no muestra nada
-- Si activas todos, muestra todo
-- Por defecto: Todos activos
-
-**Stats Cards como Filtros Rápidos:**
-- Click en una stat card = Activa SOLO ese filtro (comportamiento exclusivo)
-- Click en "Total PRs" = Activa todos los filtros
-- Las cards inactivas se muestran en gris con 60% opacidad
-
-### Tooltips Inmediatos
-
-Todos los tooltips usan `delayDuration={0}` para aparecer instantáneamente:
-- Botones de header (Ayuda, Configuración)
-- Botones de PR (Urgente, Rápida)
-- Contador de comentarios
-- Avatares de usuarios
-
-### Modal de Ayuda
-
-Muestra una leyenda completa de colores que incluye:
-- Estados de PRs con ejemplos visuales
-- Indicadores de tiempo con iconos de reloj
-- Valores de configuración dinámicos (muestra los números reales configurados)
+- Stats cards: Click = solo ese filtro | Total PRs = todos
+- Checkboxes con `<label>` para accesibilidad
+- Repos: Muestra todos los configurados (tengan PRs o no)
 
 ### Configuración
+- `assignmentTimeLimit`: 4h (warning)
+- `maxDaysOpen`: 5 días (crítico)
+- Repos a monitorear
+- Modo test (datos dummy)
 
-Permite ajustar:
-- `assignmentTimeLimit`: Horas antes de considerar warning (default: 4h)
-- `maxDaysOpen`: Días máximos abierta antes de estado crítico (default: 5 días)
-- Repositorios a monitorear
-- Modo test (usa datos dummy)
+## Convenciones CRÍTICAS
 
-**Nota**: El botón de configuración está actualmente oculto por CSS hasta implementar autenticación.
+### Root Cause Analysis para Bugs (OBLIGATORIO)
+1. Comparar comportamiento (local vs prod)
+2. Revisar código que funciona (buscar patrones similares)
+3. Analizar diferencias de entorno (build, timing, estado)
+4. Identificar assumptions incorrectas
+5. Buscar state inconsistencies (IDs no determinísticos, closures stale, deps incorrectas)
+6. Validar con datos reales (nulls, undefined, edge cases)
 
-### Estado Vacío
+**Ejemplo:** Collapsible no funciona en prod → Root cause: `Math.random()` en IDs → Solución: IDs determinísticos
 
-Cuando no hay PRs para mostrar (por filtros o porque realmente no hay):
-- Se muestra un GIF animado de un matojo (tumbleweed) del desierto
-- Mensaje contextual según el motivo (sin PRs vs filtros vacíos)
-- Diseño centrado con espaciado generoso
+### Shadcn/ui (OBLIGATORIO)
+- **SIEMPRE** usar Shadcn/ui para UI
+- **SIEMPRE** consultar MCP server antes de crear/modificar
+- **NUNCA** crear componentes custom si existe en Shadcn
+- Workflow: MCP → docs → `npx shadcn@latest add` → personalizar con Tailwind
 
-### Botones Ocultos Temporalmente
+**Disponibles:** Button, Card, Checkbox, Dialog, DropdownMenu, Input, Label, Select, Separator, Sheet, Tooltip, Avatar, Badge, Sidebar, Breadcrumb, Collapsible, Sonner
 
-Por seguridad, los siguientes botones están ocultos con CSS hasta implementar autenticación:
-- **Botón de Configuración** (Settings en header) - Clase: `config-button-hidden`
-- **Botón "Urgente"** (Flame en PR cards) - Clase: `urgent-button-hidden`
-- **Botón "Rápida"** (Zap en PR cards) - Clase: `quick-button-hidden`
+**Theme:** Yellow (primary: yellow-400, foreground: yellow-900)
 
-**Implementación**: Regla CSS `display: none !important` en `src/index.css`
-**Reactivar**: Eliminar las clases CSS del archivo `index.css`
-**Código**: Toda la funcionalidad permanece intacta, solo oculta visualmente
-
-## Convenciones de Código
-
-### Metodología de Root Cause Analysis para Bugs
-
-**OBLIGATORIO: Cuando se reporte un bug, siempre aplicar esta metodología antes de proponer una solución:**
-
-1. **Comparar comportamiento**:
-   - ¿Funciona en local pero no en producción? ¿O viceversa?
-   - ¿Qué es diferente entre los entornos?
-   - ¿Hay diferencias de datos, timing, o configuración?
-
-2. **Revisar código que funciona**:
-   - Buscar patrones similares en el codebase que SÍ funcionan correctamente
-   - Comparar implementaciones para identificar diferencias sutiles
-   - Usar componentes que funcionan como referencia
-
-3. **Analizar diferencias de entorno**:
-   - Build de producción: minificación, tree-shaking, optimizaciones
-   - React en producción: StrictMode desactivado, menos re-renders
-   - Timing: network latency, async operations, race conditions
-   - Estado: hydration, SSR vs CSR
-
-4. **Identificar assumptions incorrectas**:
-   - ¿Qué estoy asumiendo que puede no ser cierto?
-   - ¿Dependo de algo que puede variar (orden, timing, IDs)?
-   - ¿Hay side effects no considerados?
-
-5. **Buscar state inconsistencies**:
-   - **IDs no determinísticos** (Math.random, Date.now en keys)
-   - Referencias que cambian entre renders
-   - Closures que capturan valores stale
-   - Dependencies incorrectas en useEffect/useMemo
-   - Estado asíncrono no sincronizado
-
-6. **Validar con datos reales**:
-   - No solo probar el caso "happy path"
-   - Probar con datos vacíos, nulls, undefined
-   - Probar límites y casos edge
-
-**Ejemplo real:**
-```
-Bug: Collapsible no se expande en producción, pero funciona en local
-❌ Primera hipótesis: Problema con el componente Collapsible
-❌ Segunda hipótesis: Problema con asChild prop
-✅ Root cause real: Math.random() generaba IDs diferentes en cada render,
-   rompiendo el state tracking de React. En producción había más re-renders.
-✅ Solución: Usar ID determinístico basado en username
-```
-
-**Beneficios:**
-- Evita soluciones superficiales que no resuelven el problema real
-- Ahorra tiempo al no aplicar "fixes" innecesarios
-- Identifica la causa raíz en lugar de los síntomas
-- Previene que el mismo problema aparezca en otros lugares
+**Notificaciones:**
+- **SIEMPRE** usar Sonner (toasts) en lugar de `alert()` nativo
+- `toast.error()` para errores críticos
+- `toast.warning()` para advertencias
+- `toast.success()` para confirmaciones exitosas
+- Configurado en `App.tsx` con `<Toaster />`
 
 ### Nombres de Variables
+- `pr/prs`: Pull Request(s)
+- `hasAssignee/isOverMaxDays`: Booleans de estado
+- `config`: Configuración
 
-- `pr`: Pull Request individual
-- `prs`: Array de Pull Requests
-- `hasAssignee`: Boolean si tiene assignee
-- `isOverMaxDays`: Boolean si excedió días máximos
-- `config`: Objeto de configuración
+### Estilos
+- Tailwind clases utilitarias
+- Colores custom: `style={{ backgroundColor: '#ffeb9e' }}`
+- Tooltips: `delayDuration={0}` SIEMPRE
 
-### Estilos Tailwind
+## Integraciones GitHub API
 
-- Preferir clases utilitarias de Tailwind
-- Para colores específicos como `#ffeb9e`, usar `style={{ backgroundColor: '#ffeb9e' }}`
-- Usar variantes de Tailwind (hover:, focus:, etc.)
+**Netlify Functions:**
+- `/api/collaborators`: Lista colaboradores (excluye bots)
+- `/api/assign-assignees`: POST con `{owner, repo, pull_number, assignees[], action: 'add'|'remove'}`
+- `/api/assign-reviewers`: POST similar (restricción: no autor PR)
+- `/api/toggle-urgent|quick`: POST actualiza labels
 
-### Componentes UI con Shadcn/ui
+**Lógica:**
+- Reviewers: `requested_reviewers` + `pulls.listReviews()` combinados
+- Comentarios: `issues.listComments()` + `pulls.listReviewComments()` filtrados (sin bots/Linear)
+- Labels: `🔥 urgent` (d73a4a), `⚡ quick` (fbca04)
 
-**OBLIGATORIO: Siempre usar Shadcn/ui para componentes de UI**
+## Proceso de Desarrollo
 
-- **SIEMPRE** usar componentes de Shadcn/ui para cualquier elemento de interfaz
-- **SIEMPRE** consultar el MCP server de Shadcn antes de crear o modificar componentes UI
-- **NUNCA** crear componentes UI personalizados si existe una alternativa en Shadcn/ui
-- Todos los tooltips deben tener `delayDuration={0}`
-- Los checkboxes deben estar dentro de `<label>` para mejor accesibilidad
+**Workflow:**
+1. Cambio de código
+2. Actualizar CHANGELOG.md (`[Unreleased]`)
+3. Actualizar CLAUDE.md (si afecta arquitectura/convenciones)
+4. Commit (conventional: `feat:`, `fix:`, etc.) + Claude attribution footer
+5. Push a `main` (deploy auto)
 
-**Workflow obligatorio para componentes UI:**
-1. Antes de crear/modificar UI, usar el MCP server de Shadcn (`mcp__shadcn__getComponent`)
-2. Revisar la documentación y ejemplos del componente
-3. Instalar el componente si no existe: `npx shadcn@latest add [component]`
-4. Usar el componente siguiendo las convenciones de Shadcn/ui
-5. Personalizar solo mediante Tailwind CSS y las props disponibles
-
-**Componentes Shadcn/ui disponibles en el proyecto:**
-- Button, Card, Checkbox, Dialog, DropdownMenu
-- Input, Label, Select, Separator
-- Sheet, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent
-- Avatar, AvatarImage, AvatarFallback
-- Badge (para labels de GitHub)
-- Sidebar, SidebarProvider, SidebarInset, SidebarTrigger (y todos los primitivos)
-- Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator
-- Collapsible, CollapsibleTrigger, CollapsibleContent (para secciones plegables)
-
-**Theme Configuration:**
-El proyecto usa el theme **Yellow** de Shadcn configurado en `src/index.css`:
-- **Primary color**: Yellow-400 (`47.9 95.8% 53.1%`) - Amarillo vibrante
-- **Primary foreground**: Yellow-900 (`26 83.3% 14.1%`) - Marrón oscuro
-- **Ring/Focus**: Yellow para acentos de enfoque
-- **Sidebar**: Colores yellow para estados activos y ring
-- El theme está configurado tanto para modo light como dark
-
-**Para consultar componentes:**
-```typescript
-// Listar todos los componentes disponibles
-mcp__shadcn__getComponents
-
-// Obtener documentación de un componente específico
-mcp__shadcn__getComponent({ component: "button" })
-```
-
-## Integraciones
-
-### GitHub API
-
-Las funciones de Netlify se conectan a la API de GitHub para:
-- Obtener PRs de repositorios configurados
-- Obtener colaboradores de repos
-- **Gestionar assignees de PRs** (`/api/assign-assignees`)
-- **Gestionar reviewers de PRs** (`/api/assign-reviewers`)
-- Actualizar labels de PRs (urgent/quick)
-- Obtener comentarios individuales y filtrarlos (excluye bots y Linear bot)
-
-**Funciones Serverless para Assignees/Reviewers:**
-
-#### `/api/collaborators` (GET)
-Obtiene lista de colaboradores del repositorio:
-- Combina colaboradores, contribuidores y miembros de organización
-- Excluye usuarios específicos configurados
-- Excluye bots automáticamente
-- Retorna datos simplificados: `{ id, login, avatar_url }`
-
-#### `/api/assign-assignees` (POST)
-Gestiona assignees de una PR:
-- Parámetros: `owner`, `repo`, `pull_number`, `assignees` (array de logins), `action` ('add' | 'remove')
-- Usa `issues.addAssignees()` o `issues.removeAssignees()`
-- Retorna éxito o error
-
-#### `/api/assign-reviewers` (POST)
-Gestiona reviewers de una PR:
-- Parámetros: `owner`, `repo`, `pull_number`, `reviewers` (array de logins), `action` ('add' | 'remove')
-- Usa `pulls.requestReviewers()` o `pulls.removeRequestedReviewers()`
-- **Restricción**: No permite agregar al autor de la PR como reviewer (restricción de GitHub)
-- Retorna éxito o error
-
-**Lógica de Reviewers:**
-- `requested_reviewers`: Reviewers solicitados que **aún NO han revisado** (se quitan automáticamente al completar review)
-- `pulls.listReviews()`: Obtiene todos los reviews completados
-- Se combinan ambas fuentes para mostrar reviewers pendientes + completados
-- Se filtran automáticamente: bots (tipo "Bot" o con "[bot]" en nombre) y el autor de la PR
-
-**Lógica de Comentarios:**
-- `issues.listComments()`: Obtiene comentarios generales de la conversación
-- `pulls.listReviewComments()`: Obtiene comentarios de código (review comments)
-- Se filtran automáticamente comentarios de:
-  - Bots (tipo "Bot" o con "[bot]" en nombre)
-  - Linear bot (usuarios con "linear" en el login)
-  - Comentarios sin usuario
-- Fallback al conteo total si hay error en la obtención de comentarios individuales
-
-### Labels de GitHub
-
-El sistema usa dos labels especiales:
-- `🔥 urgent`: Marca PRs urgentes
-- `⚡ quick`: Marca PRs rápidas
-
-## Modo Test
-
-El modo test permite:
-- Probar la UI sin configurar GitHub App
-- Usa datos dummy definidos en `dummyData.ts`
-- No hace llamadas a APIs externas
-- Útil para desarrollo y demos
-
-## Animaciones
-
-### animate-ring
-
-Animación CSS personalizada para el icono de reloj cuando una PR excede el límite:
-```css
-@keyframes ring {
-  0%, 100% { transform: rotate(0deg); }
-  10%, 30% { transform: rotate(-10deg); }
-  20%, 40% { transform: rotate(10deg); }
-}
-```
-
-### animate-wiggle
-
-Animación para el logo de patata en hover (definida en Tailwind config)
-
-## Comandos Útiles
-
-```bash
-# Desarrollo
-npm run dev
-
-# Build
-npm run build
-
-# Deploy (automático en push a main)
-git push origin main
-
-# Test mode
-# Activar desde el panel de configuración en la UI
-```
-
-## Proceso de Desarrollo y Documentación
-
-### Workflow de Cambios
-
-Cada vez que se realiza un cambio que se despliega a producción, se debe seguir este proceso:
-
-1. **Hacer el cambio de código**
-2. **Actualizar CHANGELOG.md**
-   - Agregar el cambio en la sección `[Unreleased]`
-   - Clasificar como: Added, Changed, Fixed, Deprecated, Removed, o Security
-   - Ser específico y claro sobre qué cambió
-3. **Actualizar CLAUDE.md** (este archivo)
-   - Si el cambio afecta la arquitectura, componentes o convenciones
-   - Si introduce nuevas características o comportamientos
-   - Si cambia el flujo de trabajo o proceso de desarrollo
-4. **Actualizar README.md** (si existe)
-   - Si el cambio afecta la instalación, configuración o uso de la aplicación
-5. **Commit con mensaje descriptivo**
-   - Usar conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, etc.
-   - Incluir el footer con Claude Code attribution
-6. **Push a main** (despliega automáticamente a Netlify)
-
-### Cuándo Versionar
-
-Cuando se acumula un conjunto significativo de cambios en `[Unreleased]`:
-1. Mover la sección `[Unreleased]` a una nueva versión con fecha
-2. Actualizar `package.json` con la nueva versión
-3. Actualizar la versión en la parte superior de este archivo (CLAUDE.md)
-4. Hacer commit: `release: bump version to X.Y.Z`
+**Versionar:**
+- Mover `[Unreleased]` → versión con fecha
+- Actualizar `package.json` + CLAUDE.md
+- Commit: `release: bump version to X.Y.Z`
 
 ## Notas Importantes
 
-1. **Autenticación obligatoria**: Todos los usuarios deben autenticarse con GitHub OAuth antes de acceder
-2. **Acceso abierto**: Actualmente cualquier usuario con cuenta de GitHub puede acceder (whitelist desactivada)
-3. **Whitelist configurable**: Se puede restringir acceso a usuarios específicos mediante variable de entorno si se requiere
-4. **Sesión persistente**: El token JWT se guarda en localStorage y persiste 7 días
-4. **Protected routes**: App.tsx maneja autenticación a nivel raíz antes de renderizar dashboard
-5. **El assignee es el revisor principal**: El assignee en este equipo representa al revisor principal que debe aprobar la PR, no a quien trabaja en ella
-6. **El reviewer NO afecta los colores**: Solo el assignee determina el color del borde
-7. **Los filtros son inclusivos**: Mostrar items que cumplan con AL MENOS UNO de los filtros activos
-8. **Tooltips inmediatos**: Siempre usar `delayDuration={0}` en TooltipProvider para tooltips instantáneos
-9. **Stats cards con tooltips**: Todas las stats cards tienen tooltips explicativos que aparecen instantáneamente
-10. **Colores consistentes**: Usar la paleta amber para "patata", yellow para warnings, red para críticos
-11. **Accesibilidad**: Checkboxes dentro de labels, tooltips descriptivos, colores con buen contraste
-12. **Stats cards clickeables**: Comportamiento exclusivo (click = solo ese filtro activo)
-13. **Repositorios siempre visibles**: El selector muestra todos los repos configurados, tengan o no PRs
-14. **Versionado automático**: La versión se lee de package.json y se muestra en footer y console
-15. **Botones ahora visibles**: Config, Urgent y Quick ahora están visibles tras implementar autenticación
-16. **Auto-refresh**: Cada 5 minutos (no en modo test)
-17. **Comentarios filtrados**: Los comentarios excluyen bots y Linear bot automáticamente
-18. **Comentarios desglosados**: Se muestran comentarios generales + comentarios de código por separado (ambos filtrados)
-19. **Exclusión de bots**: Los usuarios bot (tipo "Bot" o con "[bot]" en el nombre) se excluyen automáticamente de assignees, reviewers y comentarios
-20. **Exclusión de Linear**: Los comentarios de Linear bot se excluyen automáticamente del conteo
-21. **Reviewers completos**: Se muestran tanto reviewers solicitados como aquellos que ya completaron su review
-22. **Teams como reviewers**: Se soportan y muestran equipos completos asignados como reviewers
-23. **Branch deploys**: Development branch tiene su propia URL de staging para testing
-24. **Optimistic updates completos**: Todas las mutaciones (urgent, quick, assignees, reviewers) usan optimistic updates
-25. **No invalidateQueries en onSuccess**: CRÍTICO - esto causaría refresh de toda la lista, arruinando la UX
-26. **QueryKey consistency**: Todas las operaciones React Query deben usar `['prs', isTestMode]` exactamente
-27. **Labels sincronizados**: Los arrays de labels se actualizan junto con isUrgent/isQuick para mostrar badges instantáneamente
-28. **IDs determinísticos**: NUNCA usar `Math.random()` o `Date.now()` para IDs de componentes con estado (keys, Collapsible, etc.)
-29. **Usuarios registrados siempre visibles**: La vista Revisores muestra todos los usuarios del sistema, incluso sin PRs
-30. **Favicon personalizado**: Se usa `/potato-ico.ico` como favicon en lugar del default de Vite
+1. **Auth obligatoria**, actualmente acceso abierto (whitelist desactivada)
+2. **Assignee = revisor principal** (determina colores)
+3. **Filtros inclusivos** (OR): muestra PRs con ≥1 filtro activo
+4. **Tooltips instantáneos** (`delayDuration={0}`)
+5. **Stats cards clickeables** (comportamiento exclusivo)
+6. **Optimistic updates**: NO `invalidateQueries` en `onSuccess` (crítico UX)
+7. **QueryKey consistency**: `['prs', isTestMode]` siempre
+8. **IDs determinísticos**: NUNCA `Math.random()` o `Date.now()` en keys/Collapsible
+9. **Comentarios filtrados**: Excluye bots + Linear automáticamente
+10. **Auto-refresh**: 5 min (no en test mode)
+11. **Favicon**: `/potato-ico.ico`
 
-## Próximas Mejoras Potenciales
+## Animaciones
 
-- [x] Sistema de autenticación con GitHub OAuth
-- [x] Reactivar botones de configuración y acciones (tras autenticación)
-- [x] Vista "Mis PRs" con PRs creadas y asignadas
-- [x] Vista "Revisores" con carga de trabajo por usuario
-- [x] Vista "PRs en Activo" con PRs creadas por usuario
-- [ ] Notificaciones push cuando una PR se vuelve crítica
-- [ ] Métricas de tiempo de respuesta por equipo
-- [ ] Integración con Slack
-- [ ] Filtros personalizables avanzados
-- [ ] Dashboard de analíticas históricas
+- `animate-ring`: Reloj rojo cuando excede límite
+- `animate-wiggle`: Logo patata en hover
+
+## Comandos
+
+```bash
+npm run dev        # Desarrollo local
+npm run build      # Build producción
+git push origin main  # Deploy auto a Netlify
+```
+
+## Próximas Mejoras
+
+- [ ] Notificaciones push (PRs críticas)
+- [ ] Métricas históricas por equipo
+- [ ] Integración Slack
 - [ ] Asignación automática de reviewers

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Settings, Save, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -28,30 +29,65 @@ export function ConfigView({ config, onSave, isSaving, isTestMode, onTestModeCha
 
     const [owner, name] = repoInput.split('/');
     if (!owner || !name) {
-      alert('Formato inválido. Usa: owner/repo');
+      console.error('❌ Error al agregar repositorio:', {
+        input: repoInput,
+        error: 'Formato inválido',
+        expected: 'owner/repo',
+        received: repoInput
+      });
+      toast.error('Formato inválido. Usa: owner/repo');
       return;
     }
 
-    const newRepo = { owner: owner.trim(), name: name.trim(), enabled: true };
+    const trimmedOwner = owner.trim();
+    const trimmedName = name.trim();
+    const repoFullName = `${trimmedOwner}/${trimmedName}`;
+
+    // Check if already exists
+    const exists = editedConfig.repositories.some(
+      (r) => r.owner === trimmedOwner && r.name === trimmedName
+    );
+
+    if (exists) {
+      console.warn('⚠️ Repositorio duplicado:', {
+        repository: repoFullName,
+        error: 'El repositorio ya existe en la configuración',
+        currentRepos: editedConfig.repositories.map(r => `${r.owner}/${r.name}`)
+      });
+      toast.warning(`El repositorio ${repoFullName} ya está en la lista`);
+      return;
+    }
+
+    const newRepo = { owner: trimmedOwner, name: trimmedName, enabled: true };
     setEditedConfig({
       ...editedConfig,
       repositories: [...editedConfig.repositories, newRepo],
     });
     setRepoInput('');
+    toast.success(`Repositorio ${repoFullName} agregado`);
   };
 
   const handleRemoveRepo = (index: number) => {
+    const repoToRemove = editedConfig.repositories[index];
+    const repoFullName = `${repoToRemove.owner}/${repoToRemove.name}`;
+
     setEditedConfig({
       ...editedConfig,
       repositories: editedConfig.repositories.filter((_, i) => i !== index),
     });
+    toast.success(`Repositorio ${repoFullName} eliminado`);
   };
 
   const handleToggleRepo = (index: number) => {
+    const repo = editedConfig.repositories[index];
+    const repoFullName = `${repo.owner}/${repo.name}`;
+    const newState = !repo.enabled;
+
     const updatedRepos = editedConfig.repositories.map((repo, i) =>
       i === index ? { ...repo, enabled: !repo.enabled } : repo
     );
     setEditedConfig({ ...editedConfig, repositories: updatedRepos });
+    toast.success(`${repoFullName} ${newState ? 'habilitado' : 'deshabilitado'}`);
   };
 
   return (
