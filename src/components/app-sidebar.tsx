@@ -1,4 +1,4 @@
-import { LayoutGrid, Inbox, HelpCircle, Shield, Settings, Trophy, Eye, GitPullRequest } from 'lucide-react';
+import { LayoutGrid, Inbox, HelpCircle, Shield, Settings, Eye, GitPullRequest } from 'lucide-react';
 import { NavUser } from './nav-user';
 import {
   Sidebar,
@@ -24,7 +24,6 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHelp, ...props }: AppSidebarProps) {
   const canAccessConfig = useHasPermission('canAccessConfig');
-  const canAccessGamification = useHasPermission('canAccessGamification');
 
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
@@ -132,7 +131,8 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
                     <span>Gestión de Roles</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                {canAccessGamification && (
+                {/* Gamificación comentada temporalmente */}
+                {/* {canAccessGamification && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       tooltip="Gamificación"
@@ -143,7 +143,7 @@ export function AppSidebar({ currentView, onViewChange, onOpenGifModal, onOpenHe
                       <span>Gamificación</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )}
+                )} */}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
