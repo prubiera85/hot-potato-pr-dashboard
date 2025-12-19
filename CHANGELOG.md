@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Sidebar**: Ocultada temporalmente la sección de gamificación del menú
+- **README.md**: Actualización completa para reflejar el estado actual del proyecto
+  - Añadida documentación completa de autenticación y sistema de roles
+  - Documentadas las 4 vistas especializadas (Dashboard, Mis PRs, Revisores, PRs en Activo)
+  - Añadidas variables de entorno de OAuth y roles
+  - Documentadas funciones serverless de autenticación
+  - Actualizado stack tecnológico (Shadcn/ui, Zustand, OAuth)
+  - Añadidas secciones de Optimistic Updates y Detección de Entorno
+  - Documentadas convenciones de desarrollo (Shadcn/ui, Sonner, logging)
+  - Añadida sección de Troubleshooting con problemas comunes
+  - Actualizado Roadmap con mejoras relevantes
 
 ### Added
 - **Sistema de notificaciones con Sonner**: Implementación de toasts de Shadcn/ui en lugar de alerts nativos
