@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Sidebar**: Ocultada temporalmente la sección de gamificación del menú
+
 ### Added
 - **Sistema de notificaciones con Sonner**: Implementación de toasts de Shadcn/ui en lugar de alerts nativos
   - Toasts de éxito para operaciones completadas (agregar, eliminar, habilitar/deshabilitar repos)
