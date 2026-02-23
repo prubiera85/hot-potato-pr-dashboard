@@ -39,7 +39,7 @@ export function Dashboard({
   isProcessingAssignees,
   isProcessingReviewers
 }: DashboardProps) {
-  const [sortBy, setSortBy] = useState<SortOption>('time-open-asc');
+  const [sortBy, setSortBy] = useState<SortOption>('time-open-desc');
   const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer']));
   const [activeRepos, setActiveRepos] = useState<Set<string>>(new Set());
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
