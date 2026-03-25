@@ -51,7 +51,7 @@ vite.config.ts            # Inyecta variables de entorno (__BRANCH__, __CONTEXT_
 **Stats Cards (filtros clickeables):**
 - Activa: Color + 100% opacidad
 - Inactiva: Gris (`bg-gray-100`) + 60% opacidad
-- Total PRs (marrón), Urgentes (rojo), Rápidas (amarillo), Sin assignee/reviewer (naranjas)
+- Total PRs (marrón), PRs aprobadas (verde), Desplegadas en QA (morado), Urgentes (rojo), Rápidas (amarillo), Sin assignee/reviewer (naranjas)
 - Tooltips instantáneos (`delayDuration={0}`)
 
 ## Detección de Entorno
@@ -151,16 +151,19 @@ Ambas con contador, estado independiente, optimistic updates
 - Tabla colapsable con PRs individuales
 - **ID determinístico**: Suma charCodes del username (negativo) para usuarios sin PRs
 - Ordenamiento: Por cantidad PRs (desc) → username (asc)
+- Iconos de estado con borde redondeado: approved (verde), QA (morado), urgent (rojo), quick (amarillo)
 
 ### TeamCreatedView.tsx
 - Solo usuarios con PRs creadas
 - Agrupa por `pr.user`
 - Tabla colapsable con assignees/reviewers badges
+- Iconos de estado con borde redondeado: approved (verde), QA (morado), urgent (rojo), quick (amarillo)
 
 ### PRCard.tsx
 **Layout:**
-- Izquierda: Header (repo + urgent/quick) | Centro (título + info) | Footer (Ver en GitHub)
+- Izquierda: Header (repo + urgent/quick) | Centro (título + info) | Footer (Ver en GitHub + labels)
 - Derecha: Sidebar asignaciones (256px fijo)
+- Footer muestra labels de la PR (excluye `urgent` y `quick` que ya tienen botones propios)
 - Solo visible para developer/admin/superadmin
 
 **Selectores (UserSelector):**
@@ -192,15 +195,18 @@ Ambas con contador, estado independiente, optimistic updates
 ## Características Clave
 
 ### Sistema de Filtros
-**5 filtros (lógica OR inclusiva):**
-1. Urgente (🔥 urgent label)
-2. Rápida (⚡ quick label)
-3. Asignación incompleta (assignee O reviewer)
-4. Sin assignee
-5. Sin reviewer
+**7 filtros (lógica OR inclusiva):**
+1. PRs aprobadas (✅ approved label) - verde
+2. Desplegadas en QA (🔍 qa label) - morado
+3. Urgente (🔥 urgent label) - rojo
+4. Rápida (⚡ quick label) - amarillo
+5. Asignación incompleta (assignee O reviewer) - naranja
+6. Sin assignee - naranja
+7. Sin reviewer - naranja
 
 - Stats cards: Click = solo ese filtro | Total PRs = todos
 - Checkboxes con `<label>` para accesibilidad
+- Dropdown de filtros: mismo orden que stats cards
 - Repos: Muestra todos los configurados (tengan PRs o no)
 
 ### Configuración
@@ -259,7 +265,7 @@ Ambas con contador, estado independiente, optimistic updates
 **Lógica:**
 - Reviewers: `requested_reviewers` + `pulls.listReviews()` combinados
 - Comentarios: `issues.listComments()` + `pulls.listReviewComments()` filtrados (sin bots/Linear)
-- Labels: `🔥 urgent` (d73a4a), `⚡ quick` (fbca04)
+- Labels: `urgent` (d73a4a), `quick` (fbca04), `approved`, `qa`
 
 ## Proceso de Desarrollo
 

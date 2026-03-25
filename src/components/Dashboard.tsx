@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { RefreshCw, ChevronDown, Loader2, GitPullRequest, Flame, Zap, AlertCircle, User, Eye } from 'lucide-react';
+import { RefreshCw, ChevronDown, Loader2, GitPullRequest, Flame, Zap, AlertCircle, User, Eye, Search, CircleCheckBig } from 'lucide-react';
 import type { EnhancedPR, SortOption, FilterOption } from '../types/github';
 import { sortPRs } from '../utils/prHelpers';
 import { PRCard } from './PRCard';
@@ -39,8 +39,9 @@ export function Dashboard({
   isProcessingAssignees,
   isProcessingReviewers
 }: DashboardProps) {
+  const totalFilterCount = 7;
   const [sortBy, setSortBy] = useState<SortOption>('time-open-desc');
-  const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer']));
+  const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set(['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer', 'qa', 'approved']));
   const [activeRepos, setActiveRepos] = useState<Set<string>>(new Set());
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const [isRepoDropdownOpen, setIsRepoDropdownOpen] = useState(false);
@@ -133,7 +134,7 @@ export function Dashboard({
 
   // Select/Deselect all filters
   const toggleAllFilters = () => {
-    const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer'];
+    const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer', 'qa', 'approved'];
     if (activeFilters.size === allFilters.length) {
       setActiveFilters(new Set());
     } else {
@@ -167,7 +168,7 @@ export function Dashboard({
   const handleStatClick = (filter: FilterOption | 'all') => {
     if (filter === 'all') {
       // Total PRs - select all filters
-      const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer'];
+      const allFilters: FilterOption[] = ['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer', 'qa', 'approved'];
       setActiveFilters(new Set(allFilters));
     } else {
       // Select only this filter (exclusive)
@@ -180,20 +181,23 @@ export function Dashboard({
     let filtered = prs;
 
     // Apply status filters - show ONLY items that match ACTIVE filters
-    if (activeFilters.size > 0 && activeFilters.size < 5) {
+    const totalFilters = 7;
+    if (activeFilters.size > 0 && activeFilters.size < totalFilters) {
       filtered = filtered.filter((pr) => {
         if (activeFilters.has('urgent') && pr.isUrgent) return true;
         if (activeFilters.has('quick') && pr.isQuick) return true;
         if (activeFilters.has('unassigned') && (pr.missingAssignee || pr.missingReviewer)) return true;
         if (activeFilters.has('missing-assignee') && pr.missingAssignee) return true;
         if (activeFilters.has('missing-reviewer') && pr.missingReviewer) return true;
+        if (activeFilters.has('qa') && pr.labels.some(l => l.name.toLowerCase() === 'qa')) return true;
+        if (activeFilters.has('approved') && pr.labels.some(l => l.name.toLowerCase() === 'approved')) return true;
         return false;
       });
     } else if (activeFilters.size === 0) {
       // No filters active, show nothing
       filtered = [];
     }
-    // If activeFilters.size === 5, show all (no filtering)
+    // If all filters active, show all (no filtering)
 
     // Apply repository filter - show ONLY repos that are ACTIVE
     if (activeRepos.size > 0 && activeRepos.size < repositories.length) {
@@ -223,6 +227,8 @@ export function Dashboard({
       quick: prs.filter((pr) => pr.isQuick).length,
       missingAssignee: prs.filter((pr) => pr.missingAssignee).length,
       missingReviewer: prs.filter((pr) => pr.missingReviewer).length,
+      qa: prs.filter((pr) => pr.labels.some(l => l.name.toLowerCase() === 'qa')).length,
+      approved: prs.filter((pr) => pr.labels.some(l => l.name.toLowerCase() === 'approved')).length,
     };
   }, [prs]);
 
@@ -230,26 +236,70 @@ export function Dashboard({
     <TooltipProvider delayDuration={0}>
       <div className="space-y-6 px-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => handleStatClick('all')}
                 className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
-                  activeFilters.size === 5
+                  activeFilters.size === totalFilterCount
                     ? 'bg-amber-50 border-amber-700'
                     : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <GitPullRequest className={`w-5 h-5 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`} />
-                  <div className={`text-xl font-bold ${activeFilters.size === 5 ? 'text-amber-900' : 'text-gray-600'}`}>{stats.total}</div>
+                  <GitPullRequest className={`w-5 h-5 ${activeFilters.size === totalFilterCount ? 'text-amber-800' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.size === totalFilterCount ? 'text-amber-900' : 'text-gray-600'}`}>{stats.total}</div>
                 </div>
-                <div className={`text-xs mt-1 ${activeFilters.size === 5 ? 'text-amber-800' : 'text-gray-500'}`}>Total PRs</div>
+                <div className={`text-xs mt-1 ${activeFilters.size === totalFilterCount ? 'text-amber-800' : 'text-gray-500'}`}>Total PRs</div>
               </button>
             </TooltipTrigger>
             <TooltipContent>
               <p>Mostrar todas las PRs (activa todos los filtros)</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('approved')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.has('approved')
+                    ? 'bg-green-50 border-green-500'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <CircleCheckBig className={`w-5 h-5 ${activeFilters.has('approved') ? 'text-green-600' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.has('approved') ? 'text-green-700' : 'text-gray-600'}`}>{stats.approved}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.has('approved') ? 'text-green-600' : 'text-gray-500'}`}>PRs aprobadas</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PRs con label approved</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleStatClick('qa')}
+                className={`rounded-lg shadow p-3 border-2 transition-all hover:scale-105 cursor-pointer text-left ${
+                  activeFilters.has('qa')
+                    ? 'bg-purple-50 border-purple-500'
+                    : 'bg-gray-100 border-gray-300 hover:bg-gray-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Search className={`w-5 h-5 ${activeFilters.has('qa') ? 'text-purple-600' : 'text-gray-500'}`} />
+                  <div className={`text-xl font-bold ${activeFilters.has('qa') ? 'text-purple-700' : 'text-gray-600'}`}>{stats.qa}</div>
+                </div>
+                <div className={`text-xs mt-1 ${activeFilters.has('qa') ? 'text-purple-600' : 'text-gray-500'}`}>Desplegadas en QA</div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>PRs con label QA</p>
             </TooltipContent>
           </Tooltip>
 
@@ -378,7 +428,7 @@ export function Dashboard({
                 className="bg-white hover:bg-gray-50"
               >
                 <span>
-                  {activeFilters.size === 5
+                  {activeFilters.size === totalFilterCount
                     ? 'Todos'
                     : activeFilters.size === 0
                     ? 'Ninguno'
@@ -396,10 +446,32 @@ export function Dashboard({
                       size="sm"
                       className="w-full bg-white hover:bg-gray-50"
                     >
-                      {activeFilters.size === 5 ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                      {activeFilters.size === totalFilterCount ? 'Deseleccionar todos' : 'Seleccionar todos'}
                     </Button>
                   </div>
                   <div className="p-2">
+                    <label
+                      className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={activeFilters.has('approved')}
+                        onCheckedChange={() => toggleFilter('approved')}
+                      />
+                      <span className="text-sm flex-1">
+                        ✅ PRs aprobadas <span className="text-gray-500">({stats.approved})</span>
+                      </span>
+                    </label>
+                    <label
+                      className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={activeFilters.has('qa')}
+                        onCheckedChange={() => toggleFilter('qa')}
+                      />
+                      <span className="text-sm flex-1">
+                        🔍 Desplegadas en QA <span className="text-gray-500">({stats.qa})</span>
+                      </span>
+                    </label>
                     <label
                       className="flex items-center gap-2 px-2 py-2 hover:bg-gray-100 rounded cursor-pointer"
                     >
@@ -565,7 +637,7 @@ export function Dashboard({
                 className="w-80 h-auto rounded-lg"
               />
               <div className="text-gray-600 text-lg">
-                {activeFilters.size === 5 && activeRepos.size === repositories.length
+                {activeFilters.size === totalFilterCount && activeRepos.size === repositories.length
                   ? 'No hay PRs abiertas... 🌵'
                   : 'No hay PRs que coincidan con los filtros seleccionados'}
               </div>

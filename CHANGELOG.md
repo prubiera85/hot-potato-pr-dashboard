@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Filtros de labels QA y Approved**: Dos nuevos filtros en el Dashboard
+  - Stat card "PRs aprobadas" (verde, icono CircleCheckBig) en posición 2
+  - Stat card "Desplegadas en QA" (morado, icono Search/lupa) en posición 3
+  - Checkboxes en dropdown de filtros (orden: aprobadas, QA, urgentes, rápidas, resto)
+  - Filtrado por labels `approved` y `qa` (case-insensitive)
+- **Labels visibles en PRCard**: Los labels de cada PR se muestran como badges junto al botón "Ver en GitHub"
+  - Colores derivados del color del label en GitHub
+  - Labels `urgent` y `quick` excluidos (ya tienen botones propios)
+- **Iconos de estado en vistas de equipo**: TeamAssignedView y TeamCreatedView muestran iconos con borde redondeado
+  - Approved (check verde), QA (lupa morada), Urgent (llama roja), Quick (rayo amarillo)
+  - Estilo consistente: icono dentro de círculo con fondo y borde de color
+
 ### Changed
 - **Sidebar**: Ocultada temporalmente la sección de gamificación del menú
 - **README.md**: Actualización completa para reflejar el estado actual del proyecto

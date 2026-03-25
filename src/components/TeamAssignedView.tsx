@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Flame, Zap, Clock, MessageSquare, Eye, RefreshCw, ExternalLink, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Flame, Zap, Clock, MessageSquare, Eye, RefreshCw, ExternalLink, Loader2, CircleCheckBig, Search } from 'lucide-react';
 import { EnhancedPR, GitHubUser } from '../types/github';
 import { formatTimeAgo } from '../utils/prHelpers';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -361,13 +361,27 @@ export function TeamAssignedView({ prs, maxDaysOpen, isLoading = false, onRefres
                               </td>
 
                               {/* Icons and GitHub button */}
-                              <td className="py-3 px-3" style={{ width: '80px' }}>
+                              <td className="py-3 px-3" style={{ width: '140px' }}>
                                 <div className="flex items-center gap-1 justify-end">
+                                  {pr.labels.some(l => l.name.toLowerCase() === 'approved') && (
+                                    <span className="inline-flex items-center p-1 rounded-full bg-green-100 border border-green-300">
+                                      <CircleCheckBig className="w-3 h-3 text-green-600" />
+                                    </span>
+                                  )}
+                                  {pr.labels.some(l => l.name.toLowerCase() === 'qa') && (
+                                    <span className="inline-flex items-center p-1 rounded-full bg-purple-100 border border-purple-300">
+                                      <Search className="w-3 h-3 text-purple-700" />
+                                    </span>
+                                  )}
                                   {pr.isUrgent && (
-                                    <Flame className="w-3.5 h-3.5 text-red-600" fill="currentColor" />
+                                    <span className="inline-flex items-center p-1 rounded-full bg-red-100 border border-red-300">
+                                      <Flame className="w-3 h-3 text-red-600" fill="currentColor" />
+                                    </span>
                                   )}
                                   {pr.isQuick && (
-                                    <Zap className="w-3.5 h-3.5 text-yellow-500" fill="currentColor" />
+                                    <span className="inline-flex items-center p-1 rounded-full bg-yellow-100 border border-yellow-300">
+                                      <Zap className="w-3 h-3 text-yellow-500" fill="currentColor" />
+                                    </span>
                                   )}
                                   <Button
                                     asChild

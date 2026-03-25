@@ -75,7 +75,7 @@ export interface DashboardConfig {
 }
 
 export type SortOption = 'time-open-desc' | 'time-open-asc';
-export type FilterOption = 'all' | 'urgent' | 'unassigned' | 'quick' | 'missing-assignee' | 'missing-reviewer';
+export type FilterOption = 'all' | 'urgent' | 'unassigned' | 'quick' | 'missing-assignee' | 'missing-reviewer' | 'qa' | 'approved';
 
 // User roles
 export type UserRole = 'superadmin' | 'admin' | 'developer' | 'guest';

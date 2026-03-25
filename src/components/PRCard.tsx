@@ -216,8 +216,8 @@ export function PRCard({
               </div>
             </div>
 
-            {/* Footer: Ver en GitHub button */}
-            <div className="flex gap-2 mt-auto pt-2">
+            {/* Footer: Ver en GitHub button + Labels */}
+            <div className="flex items-center gap-2 mt-auto pt-2 flex-wrap">
               <Button
                 asChild
                 variant="outline"
@@ -233,6 +233,21 @@ export function PRCard({
                   <span>Ver en GitHub</span>
                 </a>
               </Button>
+              {pr.labels
+                .filter(label => label.name.toLowerCase() !== 'urgent' && label.name.toLowerCase() !== 'quick')
+                .map(label => (
+                  <span
+                    key={label.id}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{
+                      backgroundColor: `#${label.color}20`,
+                      color: `#${label.color}`,
+                      border: `1px solid #${label.color}40`,
+                    }}
+                  >
+                    {label.name}
+                  </span>
+                ))}
             </div>
           </div>
 
