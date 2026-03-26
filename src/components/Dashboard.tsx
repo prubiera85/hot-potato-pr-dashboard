@@ -180,24 +180,46 @@ export function Dashboard({
   const filteredPRs = useMemo(() => {
     let filtered = prs;
 
-    // Apply status filters - show ONLY items that match ACTIVE filters
-    const totalFilters = 7;
-    if (activeFilters.size > 0 && activeFilters.size < totalFilters) {
-      filtered = filtered.filter((pr) => {
-        if (activeFilters.has('urgent') && pr.isUrgent) return true;
-        if (activeFilters.has('quick') && pr.isQuick) return true;
-        if (activeFilters.has('unassigned') && (pr.missingAssignee || pr.missingReviewer)) return true;
-        if (activeFilters.has('missing-assignee') && pr.missingAssignee) return true;
-        if (activeFilters.has('missing-reviewer') && pr.missingReviewer) return true;
+    // Label filters (qa, approved): exclusion toggles
+    // Status filters (urgent, quick, assignment): OR inclusion
+    const labelFilters: FilterOption[] = ['qa', 'approved'];
+    const inclusionFilters: FilterOption[] = ['urgent', 'quick', 'unassigned', 'missing-assignee', 'missing-reviewer'];
+    const activeInclusionCount = inclusionFilters.filter(f => activeFilters.has(f)).length;
+    const anyLabelFilterActive = labelFilters.some(f => activeFilters.has(f));
+
+    if (activeFilters.size === 0) {
+      filtered = [];
+    } else if (activeInclusionCount === 0 && anyLabelFilterActive) {
+      // Only label filters active (stat card click on QA/Approved)
+      // Include PRs matching any active label filter
+      filtered = filtered.filter(pr => {
         if (activeFilters.has('qa') && pr.labels.some(l => l.name.toLowerCase() === 'qa')) return true;
         if (activeFilters.has('approved') && pr.labels.some(l => l.name.toLowerCase() === 'approved')) return true;
         return false;
       });
-    } else if (activeFilters.size === 0) {
-      // No filters active, show nothing
+    } else if (activeInclusionCount === 0) {
       filtered = [];
+    } else {
+      // Exclusion: hide PRs with unchecked label filters
+      if (!activeFilters.has('qa')) {
+        filtered = filtered.filter(pr => !pr.labels.some(l => l.name.toLowerCase() === 'qa'));
+      }
+      if (!activeFilters.has('approved')) {
+        filtered = filtered.filter(pr => !pr.labels.some(l => l.name.toLowerCase() === 'approved'));
+      }
+
+      // Inclusion: OR filter for status filters (skip if all 5 active)
+      if (activeInclusionCount < inclusionFilters.length) {
+        filtered = filtered.filter((pr) => {
+          if (activeFilters.has('urgent') && pr.isUrgent) return true;
+          if (activeFilters.has('quick') && pr.isQuick) return true;
+          if (activeFilters.has('unassigned') && (pr.missingAssignee || pr.missingReviewer)) return true;
+          if (activeFilters.has('missing-assignee') && pr.missingAssignee) return true;
+          if (activeFilters.has('missing-reviewer') && pr.missingReviewer) return true;
+          return false;
+        });
+      }
     }
-    // If all filters active, show all (no filtering)
 
     // Apply repository filter - show ONLY repos that are ACTIVE
     if (activeRepos.size > 0 && activeRepos.size < repositories.length) {
